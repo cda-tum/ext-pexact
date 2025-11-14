@@ -1,0 +1,110 @@
+name: ABC Integration
+
+on:
+  pull_request: {}
+  workflow_dispatch: {}
+  schedule:
+    # Run at 06:00 CET (05:00 UTC) every Friday
+    - cron: "0 5 * * 5"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-integration:
+    name: Test ABC Integration
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison flex cmake libreadline-dev
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install bison flex cmake readline
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install make cmake winflexbison3
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: ABC-${{ matrix.os }}
+          save: true
+          max-size: 5G
+
+      - name: Checkout ABC
+        uses: actions/checkout@v4
+        with:
+          repository: berkeley-abc/abc
+          path: abc
+
+      - name: Checkout ext-pexact plugin
+        uses: actions/checkout@v4
+        with:
+          path: abc/src/ext-pexact
+
+      - name: Build ABC with plugin
+        working-directory: abc
+        run: |
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            export CC="ccache gcc"
+            export CXX="ccache g++"
+          elif [ "$RUNNER_OS" == "macOS" ]; then
+            export CC="ccache clang"
+            export CXX="ccache clang++"
+          elif [ "$RUNNER_OS" == "Windows" ]; then
+            export CC="ccache gcc"
+            export CXX="ccache g++"
+          fi
+
+          NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
+          make -j${NPROC}
+
+      - name: Test pexact command
+        working-directory: abc
+        run: |
+          if [ -f ./abc ]; then
+            ABC_BIN="./abc"
+          elif [ -f ./abc.exe ]; then
+            ABC_BIN="./abc.exe"
+          elif [ -f ./build/abc ]; then
+            ABC_BIN="./build/abc"
+          elif [ -f ./build/abc.exe ]; then
+            ABC_BIN="./build/abc.exe"
+          else
+            echo "Error: ABC executable not found"
+            ls -la . || dir
+            exit 1
+          fi
+
+          echo "Testing pexact command..."
+          $ABC_BIN -c "pexact"
+
+      - name: Upload build logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-${{ matrix.os }}
+          path: |
+            abc/*.log
+            abc/build/*.log
+          if-no-files-found: ignore
