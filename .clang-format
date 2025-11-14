@@ -1,0 +1,151 @@
+---
+# This clang-format configuration attempts to emulate the (unfortunately
+# inconsistent) coding style of ABC with known limitations.
+# Target: C11 standard (ISO/IEC 9899:2011)
+
+# Language - using Cpp setting as it handles C code properly
+Language: Cpp
+Standard: Auto
+
+# Indentation
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ContinuationIndentWidth: 4
+IndentCaseLabels: false
+IndentPPDirectives: AfterHash
+IndentWrappedFunctionNames: false
+NamespaceIndentation: None
+PPIndentWidth: 1
+IndentAccessModifiers: false
+IndentExternBlock: NoIndent
+
+# Line length - set to 0 (unlimited) since ABC has varying conventions, especially for inline functions
+# Some files have lines over 180 characters for compact inline helper functions
+ColumnLimit: 0
+
+# Pointer and reference alignment
+# ABC style: Type * pName (space before AND after *, middle alignment)
+PointerAlignment: Middle
+DerivePointerAlignment: false
+ReferenceAlignment: Middle
+SpaceAroundPointerQualifiers: Both
+
+# Spacing - ABC uses spaces inside control statement parens
+# Note: SpacesInParentheses will also add spaces in defined() which differs from ABC style
+# This is a known limitation - defined( X ) vs defined(X)
+SpaceAfterCStyleCast: false
+SpaceAfterLogicalNot: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+SpaceBeforeSquareBrackets: false
+SpaceInEmptyParentheses: false
+SpacesBeforeTrailingComments: 2
+SpacesInAngles: Never
+SpacesInCStyleCastParentheses: true
+SpacesInContainerLiterals: false
+SpacesInParentheses: true
+SpacesInSquareBrackets: false
+SpaceBeforeCpp11BracedList: true
+Cpp11BracedListStyle: false
+SpaceInEmptyBlock: false
+
+# Braces - ABC uses Allman-style (braces on new line)
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Always
+  AfterEnum: false
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: true
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  IndentBraces: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+# Line breaking
+AlwaysBreakAfterReturnType: None
+AlwaysBreakBeforeMultilineStrings: false
+BreakBeforeBinaryOperators: None
+BreakBeforeTernaryOperators: true
+BreakConstructorInitializers: BeforeColon
+BreakInheritanceList: BeforeColon
+BreakStringLiterals: true
+
+# Alignment - ABC manually aligns many elements
+AlignAfterOpenBracket: Align
+AlignArrayOfStructures: None
+AlignConsecutiveAssignments: None
+AlignConsecutiveBitFields: None
+AlignConsecutiveDeclarations: None
+AlignConsecutiveMacros: Consecutive
+AlignEscapedNewlines: Right
+AlignOperands: Align
+AlignTrailingComments: true
+
+# Function parameters
+AllowAllArgumentsOnNextLine: true
+AllowAllParametersOfDeclarationOnNextLine: true
+BinPackArguments: true
+BinPackParameters: true
+
+# Short forms - ABC allows inline accessors on single line
+AllowShortBlocksOnASingleLine: Empty
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: All
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLambdasOnASingleLine: All
+AllowShortLoopsOnASingleLine: false
+
+# Empty lines
+KeepEmptyLinesAtTheStartOfBlocks: false
+MaxEmptyLinesToKeep: 2
+SeparateDefinitionBlocks: Leave
+
+# Includes
+IncludeBlocks: Regroup
+SortIncludes: true
+
+# Comments - preserve content, only fix indentation
+ReflowComments: IndentOnly
+CommentPragmas: ".*"
+
+# Penalties for line breaking
+PenaltyBreakAssignment: 100
+PenaltyBreakBeforeFirstCallParameter: 100
+PenaltyBreakComment: 300
+PenaltyBreakFirstLessLess: 120
+PenaltyBreakString: 1000
+PenaltyExcessCharacter: 1000000
+PenaltyReturnTypeOnItsOwnLine: 10000
+PenaltyIndentedWhitespace: 0
+
+# Other
+CompactNamespaces: false
+FixNamespaceComments: false
+SortUsingDeclarations: false
+InsertTrailingCommas: None
+DeriveLineEnding: false
+UseCRLF: false
+
+# Macros and special handling
+MacroBlockBegin: ""
+MacroBlockEnd: ""
+AttributeMacros:
+  [
+    "ABC_NAMESPACE_HEADER_START",
+    "ABC_NAMESPACE_HEADER_END",
+    "ABC_NAMESPACE_IMPL_START",
+    "ABC_NAMESPACE_IMPL_END",
+  ]
+StatementAttributeLikeMacros: []
+StatementMacros: []
