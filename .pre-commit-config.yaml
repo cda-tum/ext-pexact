@@ -1,0 +1,69 @@
+# To run all pre-commit checks, use:
+#
+#     pre-commit run -a
+#
+# To install pre-commit hooks that run every time you commit:
+#
+#     pre-commit install
+#
+
+ci:
+  autoupdate_commit_msg: "⬆️🪝 update pre-commit hooks"
+  autoupdate_schedule: quarterly
+  autofix_commit_msg: "🎨 pre-commit fixes"
+
+repos:
+  # Check for merge conflicts
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-merge-conflict
+        args: ["--assume-in-merge"]
+        fail_fast: true
+
+  # Standard hooks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+      - id: check-case-conflict
+      - id: check-docstring-first
+      - id: check-symlinks
+      - id: debug-statements
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+
+  # Handling unwanted unicode characters
+  - repo: https://github.com/sirosen/texthooks
+    rev: 0.7.1
+    hooks:
+      - id: fix-ligatures
+      - id: fix-smartquotes
+
+  # Check for license headers
+  - repo: https://github.com/emzeat/mz-lictools
+    rev: v2.8.0
+    hooks:
+      - id: license-tools
+
+  # Clang-format the C++ part of the code base automatically
+  - repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: v21.1.5
+    hooks:
+      - id: clang-format
+        types_or: [c++, c]
+        args: ["-style=file"]
+
+  # Format configuration files with prettier
+  - repo: https://github.com/rbubley/mirrors-prettier
+    rev: v3.6.2
+    hooks:
+      - id: prettier
+        types_or: [markdown, yaml, json]
+
+  # Check for spelling
+  - repo: https://github.com/crate-ci/typos
+    rev: v1.39.0
+    hooks:
+      - id: typos
