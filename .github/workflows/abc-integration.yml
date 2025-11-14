@@ -74,6 +74,10 @@ jobs:
           elif [ "$RUNNER_OS" == "Windows" ]; then
             export CC="ccache gcc"
             export CXX="ccache g++"
+            # Add flags to allow pointer/integer conversion warnings on Windows
+            # These are ABC upstream issues with 64-bit pointer handling
+            export CFLAGS="-Wno-error=int-to-pointer-cast -Wno-error=pointer-to-int-cast -fpermissive"
+            export CXXFLAGS="-Wno-error=int-to-pointer-cast -Wno-error=pointer-to-int-cast -fpermissive"
           fi
 
           NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
