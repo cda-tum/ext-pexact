@@ -16,7 +16,7 @@ namespace
 {
 
 // Very simple ABC command: prints a greeting and its command line argumentss
-int Hello_Command( Abc_Frame_t * pAbc, int argc, char ** argv )
+int Pexact_Command( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     std::cout << "Hello world!" << std::endl;
 
@@ -31,7 +31,7 @@ int Hello_Command( Abc_Frame_t * pAbc, int argc, char ** argv )
 // called during ABC startup
 void init( Abc_Frame_t * pAbc )
 {
-    Cmd_CommandAdd( pAbc, "Hello", "@hello", Hello_Command, 0 );
+    Cmd_CommandAdd( pAbc, "pexact", "pexact", Pexact_Command, 0 );
 }
 
 // called during ABC termination
@@ -49,6 +49,6 @@ struct registrar {
     {
         Abc_FrameAddInitializer( &frame_initializer );
     }
-} hello_registrar;
+} pexact_registrar;
 
 }  // unnamed namespace
