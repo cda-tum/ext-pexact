@@ -1,0 +1,164 @@
+---
+# This clang-tidy configuration targets new ABC extension modules
+# and enforces stricter checks than historical ABC code obeys by.
+# Detects bugs, security issues, and performance problems.
+# Some checks are disabled to accommodate ABC's established patterns.
+# Target: C11 standard (ISO/IEC 9899:2011)
+
+# Comprehensive set of checks for C11 best practices
+Checks: >
+  -*,
+  bugprone-*,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-implicit-widening-of-multiplication-result,
+  -bugprone-narrowing-conversions,
+  -bugprone-reserved-identifier,
+  -bugprone-signed-char-misuse,
+  cert-*,
+  -cert-dcl37-c,
+  -cert-dcl51-cpp,
+  clang-analyzer-*,
+  -clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling,
+  -clang-diagnostic-*,
+  performance-*,
+  -performance-no-int-to-ptr,
+  portability-*,
+  readability-*,
+  -readability-container-contains,
+  -readability-container-data-pointer,
+  -readability-container-size-empty,
+  -readability-convert-member-functions-to-static,
+  -readability-named-parameter,
+  -readability-operators-representation,
+  -readability-redundant-access-specifiers,
+  -readability-redundant-casting,
+  -readability-redundant-inline-specifier,
+  -readability-redundant-member-init,
+  -readability-redundant-smartpointer-get,
+  -readability-redundant-string-cstr,
+  -readability-redundant-string-init,
+  -readability-reference-to-constructed-temporary,
+  -readability-simplify-subscript-expr,
+  -readability-static-accessed-through-instance,
+  -readability-static-definition-in-anonymous-namespace,
+  -readability-uniqueptr-delete-release,
+  readability-identifier-naming,
+  concurrency-*,
+  misc-*,
+  -misc-header-include-cycle,
+  -misc-include-cleaner,
+  -misc-use-anonymous-namespace
+
+# Warnings as errors - disabled to not break existing builds
+WarningsAsErrors: ""
+
+# Header filter - only check project headers
+HeaderFilterRegex: 'src/.*\.(h|hpp)$'
+
+# Format style (should match .clang-format)
+FormatStyle: file
+
+# Check options
+CheckOptions:
+  # Readability - braces
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: "0"
+
+  # Readability - function complexity (C11 best practices)
+  - key: readability-function-cognitive-complexity.Threshold
+    value: "25"
+  - key: readability-function-size.LineThreshold
+    value: "150"
+  - key: readability-function-size.StatementThreshold
+    value: "100"
+  - key: readability-function-size.BranchThreshold
+    value: "15"
+  - key: readability-function-size.ParameterThreshold
+    value: "8"
+  - key: readability-function-size.NestingThreshold
+    value: "5"
+  - key: readability-function-size.VariableThreshold
+    value: "50"
+
+  # Readability - identifier length (allow short names in ABC style)
+  - key: readability-identifier-length.MinimumVariableNameLength
+    value: "1"
+  - key: readability-identifier-length.MinimumParameterNameLength
+    value: "1"
+  - key: readability-identifier-length.MinimumLoopCounterNameLength
+    value: "1"
+
+  # Readability - magic numbers (allow more flexibility for embedded/systems code)
+  - key: readability-magic-numbers.IgnoredIntegerValues
+    value: "0;1;2;4;8;16;32;64;128;256;512;1024"
+  - key: readability-magic-numbers.IgnoredFloatingPointValues
+    value: "0.0;1.0;2.0"
+  - key: readability-magic-numbers.IgnoreBitFieldsWidths
+    value: "true"
+  - key: readability-magic-numbers.IgnorePowersOf2IntegerValues
+    value: "true"
+
+  # Readability - implicit bool conversion (allow for C style)
+  - key: readability-implicit-bool-conversion.AllowIntegerConditions
+    value: "true"
+  - key: readability-implicit-bool-conversion.AllowPointerConditions
+    value: "true"
+
+  # Misc - const correctness (encourage but don't be too strict)
+  - key: misc-const-correctness.WarnPointersAsValues
+    value: "false"
+  - key: misc-const-correctness.TransformPointersAsValues
+    value: "false"
+
+  # Misc - recursion detection
+  - key: misc-no-recursion.IgnoreMacros
+    value: "true"
+
+  # Performance checks
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: "true"
+  - key: performance-unnecessary-copy-initialization.AllowedTypes
+    value: ""
+
+  # Naming conventions based on ABC codebase
+  - key: readability-identifier-naming.TypedefCase
+    value: "CamelCase"
+  - key: readability-identifier-naming.TypedefSuffix
+    value: "_t"
+  - key: readability-identifier-naming.StructCase
+    value: "CamelCase"
+  - key: readability-identifier-naming.StructSuffix
+    value: "_t_"
+  - key: readability-identifier-naming.EnumCase
+    value: "CamelCase"
+  - key: readability-identifier-naming.EnumSuffix
+    value: "_t"
+  - key: readability-identifier-naming.FunctionCase
+    value: "CamelCase"
+  - key: readability-identifier-naming.GlobalConstantCase
+    value: "UPPER_CASE"
+  - key: readability-identifier-naming.MacroDefinitionCase
+    value: "UPPER_CASE"
+  - key: readability-identifier-naming.ParameterCase
+    value: "camelBack"
+  - key: readability-identifier-naming.LocalVariableCase
+    value: "camelBack"
+  - key: readability-identifier-naming.GlobalVariablePrefix
+    value: "s_"
+
+  # Bugprone checks configuration
+  - key: bugprone-assert-side-effect.AssertMacros
+    value: "assert,ABC_ASSERT"
+  - key: bugprone-assert-side-effect.CheckFunctionCalls
+    value: "false"
+  - key: bugprone-suspicious-string-compare.WarnOnImplicitComparison
+    value: "true"
+  - key: bugprone-suspicious-string-compare.WarnOnLogicalNotComparison
+    value: "true"
+
+  # Portability
+  - key: portability-simd-intrinsics.Suggest
+    value: "false"
+
+# System headers to ignore
+SystemHeaders: false
