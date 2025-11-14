@@ -67,3 +67,4 @@ repos:
     rev: v1.39.0
     hooks:
       - id: typos
+        exclude: CITATION.cff

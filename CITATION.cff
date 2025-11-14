@@ -1,0 +1,33 @@
+cff-version: "1.2.0"
+authors:
+- family-names: Walter
+  given-names: Marcel
+  orcid: "https://orcid.org/0000-0001-5660-9518"
+- family-names: Feldmeier
+  given-names: Michael
+  orcid: "https://orcid.org/0009-0006-4360-4869"
+- family-names: Wille
+  given-names: Robert
+  orcid: "https://orcid.org/0000-0002-4993-7860"
+contact:
+- family-names: Walter
+  given-names: Marcel
+  orcid: "https://orcid.org/0000-0001-5660-9518"
+message: If you use this software, please cite our article in the Proceedings of
+  Design, Automation and Test in Europe (DATE) 2026.
+preferred-citation:
+  authors:
+  - family-names: Walter
+    given-names: Marcel
+    orcid: "https://orcid.org/0000-0001-5660-9518"
+  - family-names: Feldmeier
+    given-names: Michael
+    orcid: "https://orcid.org/0009-0006-4360-4869"
+  - family-names: Wille
+    given-names: Robert
+    orcid: "https://orcid.org/0000-0002-4993-7860"
+  title: "Exact Synthesis with Optimal Switching Activity"
+  type: conference-paper
+  year: 2026
+  collection-title: Design, Automation and Test in Europe (DATE)
+title: "Exact Synthesis with Optimal Switching Activity"
