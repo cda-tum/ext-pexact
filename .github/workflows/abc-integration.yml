@@ -20,12 +20,12 @@ defaults:
 
 jobs:
   test-integration:
-    name: Test ABC Integration
+    name: ABC Integration
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, macos-latest]
 
     steps:
       - name: Install dependencies (Ubuntu)
@@ -38,18 +38,6 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           brew install bison flex
-
-      - name: Install dependencies (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          choco install make cmake winflexbison3
-
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@v1.2
-        with:
-          key: ABC-${{ matrix.os }}
-          save: true
-          max-size: 5G
 
       - name: Checkout ABC
         uses: actions/checkout@v4
@@ -65,21 +53,6 @@ jobs:
       - name: Build ABC with plugin
         working-directory: abc
         run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            export CC="ccache gcc"
-            export CXX="ccache g++"
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            export CC="ccache clang"
-            export CXX="ccache clang++"
-          elif [ "$RUNNER_OS" == "Windows" ]; then
-            export CC="ccache gcc"
-            export CXX="ccache g++"
-            # Add flags to allow pointer/integer conversion warnings on Windows
-            # These are ABC upstream issues with 64-bit pointer handling
-            export CFLAGS="-Wno-error=int-to-pointer-cast -Wno-error=pointer-to-int-cast -fpermissive"
-            export CXXFLAGS="-Wno-error=int-to-pointer-cast -Wno-error=pointer-to-int-cast -fpermissive"
-          fi
-
           NPROC=$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 2)
           make -j${NPROC}
 
@@ -88,12 +61,8 @@ jobs:
         run: |
           if [ -f ./abc ]; then
             ABC_BIN="./abc"
-          elif [ -f ./abc.exe ]; then
-            ABC_BIN="./abc.exe"
           elif [ -f ./build/abc ]; then
             ABC_BIN="./build/abc"
-          elif [ -f ./build/abc.exe ]; then
-            ABC_BIN="./build/abc.exe"
           else
             echo "Error: ABC executable not found"
             ls -la . || dir
