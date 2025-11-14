@@ -1,0 +1,63 @@
+name: Clang-Tidy Review
+
+on:
+  pull_request:
+    branches: ["main"]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  clangtidy:
+    runs-on: ubuntu-latest
+    name: 🚨 Clang-Tidy
+
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake libreadline-dev
+
+      - name: Checkout ABC
+        uses: actions/checkout@v4
+        with:
+          repository: berkeley-abc/abc
+          path: abc
+
+      - name: Checkout ext-pexact plugin
+        uses: actions/checkout@v4
+        with:
+          path: abc/src/ext-pexact
+
+      - name: Generate compilation database
+        working-directory: abc
+        run: >
+          cmake -B build -S .
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          -DABC_SKIP_TESTS=ON
+
+      - name: Run clang-tidy
+        id: linter
+        uses: cpp-linter/cpp-linter-action@v2.16.6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          repo-root: "abc/src/ext-pexact"
+          style: ""
+          tidy-checks: ""
+          database: "abc/build"
+          step-summary: true
+          thread-comments: ${{ ((github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork) && 'update') || 'false' }}
+          version: "21"
+
+      - if: steps.linter.outputs.checks-failed > 0
+        run: exit 1
