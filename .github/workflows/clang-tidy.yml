@@ -54,7 +54,7 @@ jobs:
           repo-root: "abc/src/ext-pexact"
           style: ""
           tidy-checks: ""
-          database: "abc/build"
+          database: "../../build"
           step-summary: true
           thread-comments: ${{ ((github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork) && 'update') || 'false' }}
           version: "21"
