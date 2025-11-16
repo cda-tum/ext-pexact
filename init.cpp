@@ -26,6 +26,7 @@ int Pexact_Command( Abc_Frame_t * pAbc, int argc, char ** argv )
     }
 
     std::cout << "TEST OUTPUT ADDED TO CREATE A GIT DIFF" << std::endl;
+    std::cout << "ANOTHER TEST TO TRIGGER PRE-COMMIT CI" << std::endl;
 
     return 0;
 }
