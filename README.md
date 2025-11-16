@@ -60,6 +60,12 @@ This repository uses automated code quality tools:
   - Configuration: `.clang-format`
   - Applied automatically via pre-commit hooks
 
+- **clang-tidy**: Static analysis and linting for C++ code
+  - Configuration: `.clang-tidy`
+  - Rules based on C11 best practices
+  - Only applies to new plugin code, not legacy ABC code (rules are too strict for ABC)
+  - Runs automatically in CI workflow
+
 - **GitHub Actions CI**: Automated integration tests on pull requests
   - Tests integration with ABC on Ubuntu, macOS, and Windows
   - Validates the plugin builds and the `pexact` command executes
