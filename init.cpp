@@ -37,8 +37,6 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
             pPars->nVars = atoi( argv[globalUtilOptind] );
             globalUtilOptind++;
             break;
-        case 'h':
-            goto usage;
         default:
             goto usage;
         }
@@ -66,7 +64,7 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( -1, "Function should not have more than 4 inputs.\n" );
         return 1;
     }
-    std::cout << "Number of Inputs:" << pPars->nVars << std::endl;
+    std::cout << "Number of Inputs:" << pPars->nVars << "\n";
     return 1;
 usage:
     Abc_Print( -2, "usage: twoexact [-I] <hex>\n" );
@@ -76,26 +74,26 @@ usage:
 }
 
 // called during ABC startup
-void init( Abc_Frame_t * pAbc )
+void Init( Abc_Frame_t * pAbc )
 {
     Cmd_CommandAdd( pAbc, "pexact", "pexact", PexactCommand, 0 );
 }
 
 // called during ABC termination
-void destroy( Abc_Frame_t * pAbc )
+void Destroy( Abc_Frame_t * pAbc )
 {
 }
 
 // this object should not be modified after the call to Abc_FrameAddInitializer
-Abc_FrameInitializer_t frame_initializer = { init, destroy };
+Abc_FrameInitializer_t frameInitializer = { init, destroy };
 
 // register the initializer a constructor of a global object
 // called before main (and ABC startup)
-struct registrar {
-    registrar()
+struct register_t_ {
+    register_t_()
     {
-        Abc_FrameAddInitializer( &frame_initializer );
+        Abc_FrameAddInitializer( &frameInitializer );
     }
-} pexact_registrar;
+} pexactRegister;
 
 }  // unnamed namespace
