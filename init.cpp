@@ -85,7 +85,7 @@ void Destroy( Abc_Frame_t * pAbc )
 }
 
 // this object should not be modified after the call to Abc_FrameAddInitializer
-Abc_FrameInitializer_t frameInitializer = { init, destroy };
+Abc_FrameInitializer_t frameInitializer = { Init, Destroy };
 
 // register the initializer a constructor of a global object
 // called before main (and ABC startup)
