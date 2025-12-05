@@ -69,7 +69,7 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
     std::cout << "Number of Inputs:" << pPars->nVars << "\n";
     return 1;
 usage:
-    Abc_Print( -2, "usage: twoexact [-I] <hex>\n" );
+    Abc_Print( -2, "usage: pexact [-I] <hex>\n" );
     Abc_Print( -2, "\t           exact synthesis of multi-input function using two-input gates\n" );
     Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", pPars->nVars );
     return 1;
