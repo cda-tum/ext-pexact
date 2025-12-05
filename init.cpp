@@ -15,8 +15,8 @@
 
 namespace
 {
+const uint8_t DECIMAL_BASE = 10;
 
-// Very simple ABC command: prints a greeting and its command line argumentss
 int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     int c;
@@ -36,7 +36,7 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
                 Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
                 goto usage;
             }
-            pPars->nVars = strtol( argv[globalUtilOptind], &pEnd, 10 );
+            pPars->nVars = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
             globalUtilOptind++;
             break;
         default:
