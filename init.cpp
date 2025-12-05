@@ -15,7 +15,7 @@
 
 namespace
 {
-const uint8_t DECIMAL_BASE = 10;
+const int DECIMAL_BASE = 10;
 
 int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
