@@ -20,10 +20,12 @@ namespace
 int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     int c;
+    char * pEnd;
     Bmc_EsPar_t pars;
     Bmc_EsPar_t * pPars = &pars;
     Bmc_EsParSetDefault( pPars );
     Extra_UtilGetoptReset();
+    Abc_FrameInit( pAbc );
     while ( ( c = Extra_UtilGetopt( argc, argv, "I" ) ) != EOF )
     {
         switch ( c )
@@ -34,7 +36,7 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
                 Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
                 goto usage;
             }
-            pPars->nVars = atoi( argv[globalUtilOptind] );
+            pPars->nVars = strtol( argv[globalUtilOptind], &pEnd, 10 );
             globalUtilOptind++;
             break;
         default:
@@ -85,15 +87,15 @@ void Destroy( Abc_Frame_t * pAbc )
 }
 
 // this object should not be modified after the call to Abc_FrameAddInitializer
-Abc_FrameInitializer_t frameInitializer = { Init, Destroy };
+Abc_FrameInitializer_t s_frameInitializer = { Init, Destroy };
 
 // register the initializer a constructor of a global object
 // called before main (and ABC startup)
-struct register_t_ {
-    register_t_()
+struct Register_t_ {
+    Register_t_()
     {
-        Abc_FrameAddInitializer( &frameInitializer );
+        Abc_FrameAddInitializer( &s_frameInitializer );
     }
-} pexactRegister;
+} s_pexactRegister;
 
 }  // unnamed namespace
