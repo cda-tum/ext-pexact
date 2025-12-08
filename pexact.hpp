@@ -20,6 +20,8 @@
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
 const int CONST_THREE = 3;
+const int CONST_SIX = 6;
+const int CONST_TEN = 10;
 
 typedef struct PexaMan_t_ PexaMan_t;
 struct PexaMan_t_ {
@@ -51,7 +53,7 @@ static inline int PexaManFindFanin( PexaMan_t * p, int i, int k );
 static inline int PexaManEval( PexaMan_t * p );
 int ValueNthBit( int value, int n );
 static void PexaManPrintSolution( PexaMan_t * p, int fCompl );
-int PexaManGetAct( PexaMan_t * p, int fCompl );
+int PexaManGetAct( PexaMan_t * p );
 static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd );
 static int PexaManAddCnf( PexaMan_t * p, int iMint );
 void PowerExactSynthesisBase( Bmc_EsPar_t * pPars );
