@@ -202,7 +202,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     //     }
     // }
     printf( "Printing overall Truth Table...\n" );
-    int len = ( p->nObjs ) * ( pow( 2, p->nVars ) );
+    const int len = ( p->nObjs ) * ( pow( 2, p->nVars ) );
     int xIt[len];
     const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
 
@@ -210,14 +210,14 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     {
         for ( int t = 0; t < pow( 2, p->nVars ); t++ )
         {
-            int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
+            const int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
             xIt[index] = ValueNthBit( t, i );
         }
     }
 
     for ( int i = p->nVars; i < p->nVars + p->nNodes - 1; i++ )
     {
-        int index = i * ( pow( 2, p->nVars ) );
+        const int index = i * ( pow( 2, p->nVars ) );
         xIt[index] = 0;
         for ( int t = 1; t < pow( 2, p->nVars ); t++ )
         {
@@ -230,7 +230,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         printf( "i=%d:", i );
         for ( int t = 0; t < pow( 2, p->nVars ); t++ )
         {
-            int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
+            const int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
             printf( "%d", xIt[index] );
         }
         printf( "\n" );
