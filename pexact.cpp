@@ -1,0 +1,463 @@
+/*
+ * Copyright (c) 2025 Chair for Design Automation, TUM
+ * All rights reserved.
+ *
+ * SPDX-License-Identifier: MIT
+ *
+ * Licensed under the MIT License
+ */
+
+#include "pexact.hpp"
+
+#include "misc/extra/extra.h"
+#include "misc/util/utilTruth.h"
+#include "sat/bmc/bmc.h"
+#include "sat/bsat/satStore.h"
+#include "sat/cnf/cnf.h"
+
+#include <math.h>
+#include <stdio.h>
+
+
+static Vec_Wrd_t * PexaManTruthTables( PexaMan_t * p )
+{
+    Vec_Wrd_t * vInfo = p->vInfo = Vec_WrdStart( p->nWords * ( p->nObjs + 1 ) );
+    int i;
+    for ( i = 0; i < p->nVars; i++ )
+        Abc_TtIthVar( PexaManTruth( p, i ), i, p->nVars );
+    //Dau_DsdPrintFromTruth( PexaManTruth(p, p->nObjs), p->nVars );
+    return vInfo;
+}
+static int PexaManMarkup( PexaMan_t * p )
+{
+    int i, k, j;
+    assert( p->nObjs <= MAJ_NOBJS );
+    // assign functionality
+    p->iVar = 1 + p->nNodes * 3;
+    // assign connectivity variables
+    for ( i = p->nVars; i < p->nObjs; i++ )
+    {
+        for ( k = 0; k < 2; k++ )
+        {
+            if ( p->pPars->fFewerVars && i == p->nObjs - 1 && k == 0 )
+            {
+                j = p->nObjs - 2;
+                Vec_WecPush( p->vOutList, j, Abc_Var2Lit( p->iVar, 0 ) );
+                p->VarMarks[i][k][j] = p->iVar++;
+                continue;
+            }
+            for ( j = p->pPars->fFewerVars ? 1 - k : 0; j < i - k; j++ )
+            {
+                Vec_WecPush( p->vOutList, j, Abc_Var2Lit( p->iVar, 0 ) );
+                p->VarMarks[i][k][j] = p->iVar++;
+            }
+        }
+    }
+    //printf( "The number of parameter variables = %d.\n", p->iVar );
+    return p->iVar;
+    // printout
+    for ( i = p->nVars; i < p->nObjs; i++ )
+    {
+        printf( "Node %d\n", i );
+        for ( j = 0; j < p->nObjs; j++ )
+        {
+            for ( k = 0; k < 2; k++ )
+                printf( "%3d ", p->VarMarks[i][k][j] );
+            printf( "\n" );
+        }
+    }
+    return p->iVar;
+}
+static PexaMan_t * PexaManAlloc( Bmc_EsPar_t * pPars, word * pTruth )
+{
+    PexaMan_t * p = ABC_CALLOC( PexaMan_t, 1 );
+    p->pPars = pPars;
+    p->nVars = pPars->nVars;
+    p->nNodes = pPars->nNodes;
+    p->nObjs = pPars->nVars + pPars->nNodes;
+    p->nWords = Abc_TtWordNum( pPars->nVars );
+    p->pTruth = pTruth;
+    p->i_p = 0;
+    p->o_l = 0;
+    p->i_o = 0;
+    p->i_xo = 0;
+    p->i_mintermvars = 0;
+    p->vOutList = Vec_WecStart( p->nObjs );
+    p->iVar = PexaManMarkup( p );
+    p->vInfo = PexaManTruthTables( p );
+    p->pSat = sat_solver_new();
+    sat_solver_setnvars( p->pSat, p->iVar );
+    return p;
+}
+static void PexaManFree( PexaMan_t * p )
+{
+    sat_solver_delete( p->pSat );
+    Vec_WrdFree( p->vInfo );
+    Vec_WecFree( p->vOutList );
+    ABC_FREE( p );
+}
+static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
+{
+    int j, Count = 0, iVar = -1;
+    for ( j = 0; j < p->nObjs; j++ )
+        if ( p->VarMarks[i][k][j] && sat_solver_var_value( p->pSat, p->VarMarks[i][k][j] ) )
+        {
+            iVar = j;
+            Count++;
+        }
+    assert( Count == 1 );
+    return iVar;
+}
+static inline int PexaManEval( PexaMan_t * p )
+{
+    static int Flag = 0;
+    int i, k, iMint;
+    word * pFanins[2];
+    for ( i = p->nVars; i < p->nObjs; i++ )
+    {
+        int iVarStart = 1 + 3 * ( i - p->nVars );
+        for ( k = 0; k < 2; k++ )
+            pFanins[k] = PexaManTruth( p, PexaManFindFanin( p, i, k ) );
+        Abc_TtConst0( PexaManTruth( p, i ), p->nWords );
+        for ( k = 1; k < 4; k++ )
+        {
+            if ( !sat_solver_var_value( p->pSat, iVarStart + k - 1 ) )
+                continue;
+            Abc_TtAndCompl( PexaManTruth( p, p->nObjs ), pFanins[0], !( k & 1 ), pFanins[1], !( k >> 1 ), p->nWords );
+            Abc_TtOr( PexaManTruth( p, i ), PexaManTruth( p, i ), PexaManTruth( p, p->nObjs ), p->nWords );
+        }
+    }
+    if ( Flag && p->nVars >= 6 )
+        iMint = Abc_TtFindLastDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
+    else
+        iMint = Abc_TtFindFirstDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
+    //Flag ^= 1;
+    assert( iMint < ( 1 << p->nVars ) );
+    return iMint;
+}
+int ValueNthBit( int value, int n )
+{
+    int ret = ( value >> n ) & 1;
+    return ret;
+}
+static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
+{
+    int i, k, iVar;
+    printf( "Realization of given %d-input function using %d two-input gates complementary=%d:\n", p->nVars, p->nNodes, fCompl );
+    //    for ( i = p->nVars + 2; i < p->nObjs; i++ )
+    for ( i = p->nObjs - 1; i >= p->nVars; i-- )
+    {
+        int iVarStart = 1 + 3 * ( i - p->nVars );
+        int Val1 = sat_solver_var_value( p->pSat, iVarStart );
+        int Val2 = sat_solver_var_value( p->pSat, iVarStart + 1 );
+        int Val3 = sat_solver_var_value( p->pSat, iVarStart + 2 );
+        if ( i == p->nObjs - 1 && fCompl )
+            printf( "%02d = 4\'b%d%d%d1(", i, !Val3, !Val2, !Val1 );
+        else
+            printf( "%02d = 4\'b%d%d%d0(", i, Val3, Val2, Val1 );
+        for ( k = 1; k >= 0; k-- )
+        {
+            iVar = PexaManFindFanin( p, i, k );
+            if ( iVar >= 0 && iVar < p->nVars )
+                printf( " %c", 'a' + iVar );
+            else
+                printf( " %02d", iVar );
+        }
+        printf( " )\n" );
+    }
+    printf( "Printing P Variables...\n" );
+    int n_p = pow( 2, p->nVars - 1 );
+    // for ( int i = 0; i < p->nNodes - 1; i++ )
+    // {
+    //     for ( int j = 0; j < n_p; j++ )
+    //     {
+    //         printf( "p_%d_%d has value %d\n", p->nVars + i, j + 1, sat_solver_var_value( p->pSat, p->i_p + n_p * i + j ) );
+    //     }
+    // }
+    printf( "Printing overall Truth Table...\n" );
+    int len = ( p->nObjs ) * ( pow( 2, p->nVars ) );
+    int x_it[len];
+    int xi_base = p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) - p->nNodes + 3 * p->nNodes;
+
+    for ( int i = 0; i < p->nVars; i++ )
+    {
+        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+        {
+            int index = i * ( pow( 2, p->nVars ) ) + t;
+            x_it[index] = ValueNthBit( t, i );
+        }
+    }
+
+    for ( int i = p->nVars; i < p->nVars + p->nNodes - 1; i++ )
+    {
+        int index = i * ( pow( 2, p->nVars ) );
+        x_it[index] = 0;
+        for ( int t = 1; t < pow( 2, p->nVars ); t++ )
+        {
+            int index = i * ( pow( 2, p->nVars ) ) + t;
+            x_it[index] = sat_solver_var_value( p->pSat, xi_base + 3 * ( i - p->nVars + 1 ) + ( t - 1 ) * ( 3 * p->nNodes ) );
+        }
+    }
+    for ( int i = 0; i < p->nObjs - 1; i++ )
+    {
+        printf( "i=%d:", i );
+        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+        {
+            int index = i * ( pow( 2, p->nVars ) ) + t;
+            printf( "%d", x_it[index] );
+        }
+        printf( "\n" );
+    }
+    int iVarStart = 1 + 3 * ( p->nObjs - 1 - p->nVars );
+    int f_out[4];
+    f_out[0] = fCompl;
+    f_out[1] = fCompl ? !sat_solver_var_value( p->pSat, iVarStart ) : sat_solver_var_value( p->pSat, iVarStart );
+    f_out[2] = fCompl ? !sat_solver_var_value( p->pSat, iVarStart + 1 ) : sat_solver_var_value( p->pSat, iVarStart + 1 );
+    f_out[3] = fCompl ? !sat_solver_var_value( p->pSat, iVarStart + 2 ) : sat_solver_var_value( p->pSat, iVarStart + 2 );
+    int i0 = PexaManFindFanin( p, p->nObjs - 1, 0 );
+    int i1 = PexaManFindFanin( p, p->nObjs - 1, 1 );
+    printf( "i=%d:", p->nObjs - 1 );
+    for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+    {
+        int index_0 = i0 * ( pow( 2, p->nVars ) ) + t;
+        int index_1 = i1 * ( pow( 2, p->nVars ) ) + t;
+        int index = ( x_it[index_1] << 1 ) + ( x_it[index_0] );
+        printf( "%d", f_out[index] );
+    }
+    printf( "\n" );
+    printf( "\n" );
+    int sum_act = 0;
+    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
+    {
+        int sum_0 = 0;
+        int sum_1 = 0;
+        int min_sum = 0;
+        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+        {
+            int index = i * ( pow( 2, p->nVars ) ) + t;
+            if ( x_it[index] == 1 )
+                sum_1++;
+            else
+                sum_0++;
+        }
+        min_sum = sum_1 <= sum_0 ? sum_1 : sum_0;
+        sum_act += 2 * min_sum * ( pow( 2, p->nVars ) - min_sum );
+    }
+    printf( "Switching Activity=%d\n", sum_act );
+    printf( "Number of Gates: r=%d\n", p->nNodes );
+}
+int PexaManGetAct( PexaMan_t * p, int fCompl )
+{
+    int len = ( p->nObjs ) * ( pow( 2, p->nVars ) );
+    int x_it[len];
+    int xi_base = p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) - p->nNodes + 3 * p->nNodes;
+    for ( int i = p->nVars; i < p->nVars + p->nNodes - 1; i++ )
+    {
+        int index = i * ( pow( 2, p->nVars ) );
+        x_it[index] = 0;
+        for ( int t = 1; t < pow( 2, p->nVars ); t++ )
+        {
+            int index = i * ( pow( 2, p->nVars ) ) + t;
+            x_it[index] = sat_solver_var_value( p->pSat, xi_base + 3 * ( i - p->nVars + 1 ) + ( t - 1 ) * ( 3 * p->nNodes ) );
+        }
+    }
+    int sum_act = 0;
+    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
+    {
+        int sum_0 = 0;
+        int sum_1 = 0;
+        int min_sum = 0;
+        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+        {
+            int index = i * ( pow( 2, p->nVars ) ) + t;
+            if ( x_it[index] == 1 )
+                sum_1++;
+            else
+                sum_0++;
+        }
+        min_sum = sum_1 <= sum_0 ? sum_1 : sum_0;
+        sum_act += 2 * min_sum * ( pow( 2, p->nVars ) - min_sum );
+    }
+    return sum_act;
+}
+static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
+{
+    int pList[MAJ_NOBJS], pList2[2], i, j, k, n, m;
+    // input constraints
+    for ( i = p->nVars; i < p->nObjs; i++ )
+    {
+        int iVarStart = 1 + 3 * ( i - p->nVars );
+        for ( k = 0; k < 2; k++ )
+        {
+            int nList = 0;
+            for ( j = 0; j < p->nObjs; j++ )
+                if ( p->VarMarks[i][k][j] )
+                    pList[nList++] = Abc_Var2Lit( p->VarMarks[i][k][j], 0 );
+            assert( nList > 0 );
+            // input uniqueness
+            if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
+                return 0;
+            for ( n = 0; n < nList; n++ )
+                for ( m = n + 1; m < nList; m++ )
+                {
+                    pList2[0] = Abc_LitNot( pList[n] );
+                    pList2[1] = Abc_LitNot( pList[m] );
+                    if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
+                        return 0;
+                }
+            if ( k == 1 )
+                break;
+            // symmetry breaking
+
+            for ( j = 0; j < p->nObjs; j++ )
+                if ( p->VarMarks[i][k][j] )
+                    for ( n = j; n < p->nObjs; n++ )
+                        if ( p->VarMarks[i][k + 1][n] )
+                        {
+                            pList2[0] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
+                            pList2[1] = Abc_Var2Lit( p->VarMarks[i][k + 1][n], 1 );
+                            if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
+                                return 0;
+                        }
+        }
+#ifdef USE_NODE_ORDER
+        // node ordering
+        for ( j = p->nVars; j < i; j++ )
+            for ( n = 0; n < p->nObjs; n++ )
+                if ( p->VarMarks[i][0][n] )
+                    for ( m = n + 1; m < p->nObjs; m++ )
+                        if ( p->VarMarks[j][0][m] )
+                        {
+                            pList2[0] = Abc_Var2Lit( p->VarMarks[i][0][n], 1 );
+                            pList2[1] = Abc_Var2Lit( p->VarMarks[j][0][m], 1 );
+                            if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
+                                return 0;
+                        }
+#endif
+        // two input functions
+        for ( k = 0; k < 3; k++ )
+        {
+            pList[0] = Abc_Var2Lit( iVarStart, k == 1 );
+            pList[1] = Abc_Var2Lit( iVarStart + 1, k == 2 );
+            pList[2] = Abc_Var2Lit( iVarStart + 2, k != 0 );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + 3 ) )
+                return 0;
+        }
+        if ( fOnlyAnd )
+        {
+            pList[0] = Abc_Var2Lit( iVarStart, 1 );
+            pList[1] = Abc_Var2Lit( iVarStart + 1, 1 );
+            pList[2] = Abc_Var2Lit( iVarStart + 2, 0 );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + 3 ) )
+                return 0;
+        }
+    }
+    // outputs should be used
+    for ( i = 0; i < p->nObjs - 1; i++ )
+    {
+        Vec_Int_t * vArray = Vec_WecEntry( p->vOutList, i );
+
+        assert( Vec_IntSize( vArray ) > 0 );
+        if ( !sat_solver_addclause( p->pSat, Vec_IntArray( vArray ), Vec_IntLimit( vArray ) ) )
+            return 0;
+    }
+    return 1;
+}
+static int PexaManAddCnf( PexaMan_t * p, int iMint )
+{
+    // save minterm values
+    int i, k, n, j, Value = Abc_TtGetBit( p->pTruth, iMint );
+    for ( i = 0; i < p->nVars; i++ )
+        p->VarVals[i] = ( iMint >> i ) & 1;
+    sat_solver_setnvars( p->pSat, p->iVar + 3 * p->nNodes );
+    //printf( "Adding clauses for minterm %d with value %d.\n", iMint, Value );
+    for ( i = p->nVars; i < p->nObjs; i++ )
+    {
+        // fanin connectivity
+        int iVarStart = 1 + 3 * ( i - p->nVars );
+        int iBaseSatVarI = p->iVar + 3 * ( i - p->nVars );
+        for ( k = 0; k < 2; k++ )
+        {
+            for ( j = 0; j < p->nObjs; j++ )
+                if ( p->VarMarks[i][k][j] )
+                {
+                    int iBaseSatVarJ = p->iVar + 3 * ( j - p->nVars );
+                    for ( n = 0; n < 2; n++ )
+                    {
+                        int pList[3], nList = 0;
+                        pList[nList++] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
+                        pList[nList++] = Abc_Var2Lit( iBaseSatVarI + k, n );
+                        if ( j >= p->nVars )
+                            pList[nList++] = Abc_Var2Lit( iBaseSatVarJ + 2, !n );
+                        else if ( p->VarVals[j] == n )
+                            continue;
+                        if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
+                            return 0;
+                    }
+                }
+        }
+        // node functionality
+        for ( n = 0; n < 2; n++ )
+        {
+            if ( i == p->nObjs - 1 && n == Value )
+                continue;
+            for ( k = 0; k < 4; k++ )
+            {
+                int pList[4], nList = 0;
+                if ( k == 0 && n == 1 )
+                    continue;
+                pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 0, ( k & 1 ) );
+                pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 1, ( k >> 1 ) );
+                if ( i != p->nObjs - 1 )
+                    pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 2, !n );
+                if ( k > 0 )
+                    pList[nList++] = Abc_Var2Lit( iVarStart + k - 1, n );
+                assert( nList <= 4 );
+                if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
+                    return 0;
+            }
+        }
+    }
+
+    p->iVar += 3 * p->nNodes;
+    return 1;
+}
+void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
+{
+    int i, status, iMint = 1;
+    abctime clkTotal = Abc_Clock();
+    PexaMan_t * p;
+    int fCompl = 0;
+    word pTruth[16];
+    Abc_TtReadHex( pTruth, pPars->pTtStr );
+    assert( pPars->nVars <= 10 );
+    p = PexaManAlloc( pPars, pTruth );
+    if ( pTruth[0] & 1 )
+    {
+        fCompl = 1;
+        Abc_TtNot( pTruth, p->nWords );
+    }
+    int r = 0;
+    while ( 1 )
+    {
+        PexaManFree( p );
+        pPars->nNodes = r + 1;
+        p = PexaManAlloc( pPars, pTruth );
+        status = PexaManAddCnfStart( p, pPars->fOnlyAnd );
+        assert( status );
+        for ( iMint = 1; iMint < pow( 2, p->nVars ); iMint++ )
+        {
+            if ( !PexaManAddCnf( p, iMint ) )
+            {
+                printf( "The problem has no solution.\n" );
+                break;
+            }
+        }
+        status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
+        //////////////////////////
+        if ( status == 1 )
+            break;
+        r++;
+    }
+    PexaManPrintSolution( p, fCompl );
+}
