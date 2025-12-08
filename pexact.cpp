@@ -24,16 +24,20 @@ static Vec_Wrd_t * PexaManTruthTables( PexaMan_t * p )
     Vec_Wrd_t * vInfo = p->vInfo = Vec_WrdStart( p->nWords * ( p->nObjs + 1 ) );
     int i;
     for ( i = 0; i < p->nVars; i++ )
+    {
         Abc_TtIthVar( PexaManTruth( p, i ), i, p->nVars );
+    }
     //Dau_DsdPrintFromTruth( PexaManTruth(p, p->nObjs), p->nVars );
     return vInfo;
 }
 static int PexaManMarkup( PexaMan_t * p )
 {
-    int i, k, j;
+    int i;
+    int k;
+    int j;
     assert( p->nObjs <= MAJ_NOBJS );
     // assign functionality
-    p->iVar = 1 + p->nNodes * 3;
+    p->iVar = 1 + ( p->nNodes * CONST_THREE );
     // assign connectivity variables
     for ( i = p->nVars; i < p->nObjs; i++ )
     {
@@ -98,14 +102,18 @@ static void PexaManFree( PexaMan_t * p )
 }
 static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
 {
-    int j, Count = 0, iVar = -1;
+    int j;
+    int count = 0;
+    int iVar = -1;
     for ( j = 0; j < p->nObjs; j++ )
+    {
         if ( p->VarMarks[i][k][j] && sat_solver_var_value( p->pSat, p->VarMarks[i][k][j] ) )
         {
             iVar = j;
-            Count++;
+            count++;
         }
-    assert( Count == 1 );
+    }
+    assert( count == 1 );
     return iVar;
 }
 static inline int PexaManEval( PexaMan_t * p )

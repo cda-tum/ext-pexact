@@ -19,6 +19,7 @@
 #include <stdio.h>
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
+const int CONST_THREE = 3;
 
 typedef struct PexaMan_t_ PexaMan_t;
 struct PexaMan_t_ {
