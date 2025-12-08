@@ -139,7 +139,7 @@ static inline int PexaManEval( PexaMan_t * p )
             {
                 continue;
             }
-            Abc_TtAndCompl( PexaManTruth( p, p->nObjs ), pFanins[0], ( k & 1 ) == 0, pFanins[1], ( k >> 1 ) == 0, p->nWords );
+            Abc_TtAndCompl( PexaManTruth( p, p->nObjs ), pFanins[0], static_cast<bool>( ( k & 1 ) == 0 ), pFanins[1], static_cast<bool>( ( k >> 1 ) == 0 ), p->nWords );
             Abc_TtOr( PexaManTruth( p, i ), PexaManTruth( p, i ), PexaManTruth( p, p->nObjs ), p->nWords );
         }
     }
@@ -167,10 +167,10 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     //    for ( i = p->nVars + 2; i < p->nObjs; i++ )
     for ( i = p->nObjs - 1; i >= p->nVars; i-- )
     {
-        int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
-        int val1 = sat_solver_var_value( p->pSat, iVarStart );
-        int val2 = sat_solver_var_value( p->pSat, iVarStart + 1 );
-        int val3 = sat_solver_var_value( p->pSat, iVarStart + 2 );
+        const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+        const int val1 = sat_solver_var_value( p->pSat, iVarStart );
+        const int val2 = sat_solver_var_value( p->pSat, iVarStart + 1 );
+        const int val3 = sat_solver_var_value( p->pSat, iVarStart + 2 );
         if ( i == p->nObjs - 1 && fCompl )
         {
             printf( "%02d = 4\'b%d%d%d1(", i, static_cast<int>( val3 ), static_cast<int>( val2 ), static_cast<int>( val1 ) );
