@@ -66,7 +66,9 @@ static int PexaManMarkup( PexaMan_t * p )
         for ( j = 0; j < p->nObjs; j++ )
         {
             for ( k = 0; k < 2; k++ )
+            {
                 printf( "%3d ", p->VarMarks[i][k][j] );
+            }
             printf( "\n" );
         }
     }
@@ -118,14 +120,18 @@ static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
 }
 static inline int PexaManEval( PexaMan_t * p )
 {
-    static int Flag = 0;
-    int i, k, iMint;
+    const int flag = 0;
+    int i;
+    int k;
+    int iMint;
     word * pFanins[2];
     for ( i = p->nVars; i < p->nObjs; i++ )
     {
-        int iVarStart = 1 + 3 * ( i - p->nVars );
+        const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
         for ( k = 0; k < 2; k++ )
+        {
             pFanins[k] = PexaManTruth( p, PexaManFindFanin( p, i, k ) );
+        }
         Abc_TtConst0( PexaManTruth( p, i ), p->nWords );
         for ( k = 1; k < 4; k++ )
         {
@@ -135,11 +141,11 @@ static inline int PexaManEval( PexaMan_t * p )
             Abc_TtOr( PexaManTruth( p, i ), PexaManTruth( p, i ), PexaManTruth( p, p->nObjs ), p->nWords );
         }
     }
-    if ( Flag && p->nVars >= 6 )
+    if ( flag && p->nVars >= 6 )
         iMint = Abc_TtFindLastDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
     else
         iMint = Abc_TtFindFirstDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
-    //Flag ^= 1;
+    //flag ^= 1;
     assert( iMint < ( 1 << p->nVars ) );
     return iMint;
 }
