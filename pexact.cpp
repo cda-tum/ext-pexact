@@ -237,17 +237,17 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     }
     const int iVarStart = 1 + ( CONST_THREE * ( p->nObjs - 1 - p->nVars ) );
     int fOut[4];
-    fOut[0] = static_cast<bool>( fCompl );
-    fOut[1] = static_cast<bool>( fCompl ) ? !sat_solver_var_value( p->pSat, iVarStart ) : sat_solver_var_value( p->pSat, iVarStart );
-    fOut[2] = static_cast<bool>( fCompl ) ? !sat_solver_var_value( p->pSat, iVarStart + 1 ) : sat_solver_var_value( p->pSat, iVarStart + 1 );
-    fOut[3] = static_cast<bool>( fCompl ) ? !sat_solver_var_value( p->pSat, iVarStart + 2 ) : sat_solver_var_value( p->pSat, iVarStart + 2 );
+    fOut[0] = static_cast<int>( fCompl );
+    fOut[1] = fCompl == 1 ? !sat_solver_var_value( p->pSat, iVarStart ) : sat_solver_var_value( p->pSat, iVarStart );
+    fOut[2] = fCompl == 1 ? !sat_solver_var_value( p->pSat, iVarStart + 1 ) : sat_solver_var_value( p->pSat, iVarStart + 1 );
+    fOut[3] = fCompl == 1 ? !sat_solver_var_value( p->pSat, iVarStart + 2 ) : sat_solver_var_value( p->pSat, iVarStart + 2 );
     const int i0 = PexaManFindFanin( p, p->nObjs - 1, 0 );
     const int i1 = PexaManFindFanin( p, p->nObjs - 1, 1 );
     printf( "i=%d:", p->nObjs - 1 );
     for ( int t = 0; t < pow( 2, p->nVars ); t++ )
     {
-        int index0 = ( i0 * ( pow( 2, p->nVars ) ) ) + t;
-        int index1 = ( i1 * ( pow( 2, p->nVars ) ) ) + t;
+        const int index0 = ( i0 * ( pow( 2, p->nVars ) ) ) + t;
+        const int index1 = ( i1 * ( pow( 2, p->nVars ) ) ) + t;
         const int index = ( xIt[index1] << 1 ) + ( xIt[index0] );
         printf( "%d", fOut[index] );
     }
