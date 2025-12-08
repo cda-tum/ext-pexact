@@ -396,9 +396,9 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
         // two input functions
         for ( k = 0; k < CONST_THREE; k++ )
         {
-            pList[0] = Abc_Var2Lit( iVarStart, k == 1 );
-            pList[1] = Abc_Var2Lit( iVarStart + 1, k == 2 );
-            pList[2] = Abc_Var2Lit( iVarStart + 2, k != 0 );
+            pList[0] = static_cast<int>( Abc_Var2Lit( iVarStart, k == 1 ) );
+            pList[1] = static_cast<int>( Abc_Var2Lit( iVarStart + 1, k == 2 ) );
+            pList[2] = static_cast<int>( Abc_Var2Lit( iVarStart + 2, k != 0 ) );
             if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
             {
                 return 0;
@@ -406,9 +406,9 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
         }
         if ( fOnlyAnd )
         {
-            pList[0] = Abc_Var2Lit( iVarStart, 1 );
-            pList[1] = Abc_Var2Lit( iVarStart + 1, 1 );
-            pList[2] = Abc_Var2Lit( iVarStart + 2, 0 );
+            pList[0] = static_cast<int>( Abc_Var2Lit( iVarStart, 1 ) );
+            pList[1] = static_cast<int>( Abc_Var2Lit( iVarStart + 1, 1 ) );
+            pList[2] = static_cast<int>( Abc_Var2Lit( iVarStart + 2, 0 ) );
             if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
             {
                 return 0;
