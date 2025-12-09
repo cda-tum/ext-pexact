@@ -331,33 +331,36 @@ static int AddCnfInpUniq( PexaMan_t * p, int n, int m, int nList, int pList[MAJ_
     }
 }
 
-static int AddCnfSymBreaking( PexaMan_t * p, int fOnlyAnd, int i, int j, int k, int n, int pList2[2] )
+static int AddCnfSymBreakingInner( PexaMan_t * p, int i, int j, int k, int n, int pList2[2] )
 {
-    // symmetry breaking
-
-    for ( j = 0; j < p->nObjs; j++ )
+    for ( n = j; n < p->nObjs; n++ )
     {
-        if ( p->VarMarks[i][k][j] )
+        if ( p->VarMarks[i][k + 1][n] )
         {
-            for ( n = j; n < p->nObjs; n++ )
+            pList2[0] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
+            pList2[1] = Abc_Var2Lit( p->VarMarks[i][k + 1][n], 1 );
+            if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
             {
-                if ( p->VarMarks[i][k + 1][n] )
-                {
-                    pList2[0] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
-                    pList2[1] = Abc_Var2Lit( p->VarMarks[i][k + 1][n], 1 );
-                    if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
-                    {
-                        return 0;
-                    }
-                }
+                return 0;
             }
         }
     }
 }
 
-static int AddCnfNodeOrdering( PexaMan_t * p, int fOnlyAnd, int i, int j, int k, int m, int n, int pList2[2] )
+static int AddCnfSymBreaking( PexaMan_t * p, int i, int j, int k, int n, int pList2[2] )
 {
-    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+    // symmetry breaking
+    for ( j = 0; j < p->nObjs; j++ )
+    {
+        if ( p->VarMarks[i][k][j] )
+        {
+            AddCnfSymBreakingInner( p, i, j, k, n, pList2 );
+        }
+    }
+}
+
+static int AddCnfNodeOrdering( PexaMan_t * p, int i, int j, int m, int n, int pList2[2] )
+{
     // node ordering
     for ( j = p->nVars; j < i; j++ )
         for ( n = 0; n < p->nObjs; n++ )
@@ -449,7 +452,7 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
             }
             // symmetry breaking
 
-            AddCnfSymBreaking( p, fOnlyAnd, i, j, k, n, pList2 );
+            AddCnfSymBreaking( p, i, j, k, n, pList2 );
         }
 #ifdef USE_NODE_ORDER
         // node ordering
