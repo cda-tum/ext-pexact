@@ -22,14 +22,13 @@
 static Vec_Wrd_t * PexaManTruthTables( PexaMan_t * p )
 {
     p->vInfo = Vec_WrdStart( p->nWords * ( p->nObjs + 1 ) );
-    Vec_Wrd_t * vInfo = p->vInfo;
     int i;
     for ( i = 0; i < p->nVars; i++ )
     {
         Abc_TtIthVar( PexaManTruth( p, i ), i, p->nVars );
     }
     //Dau_DsdPrintFromTruth( PexaManTruth(p, p->nObjs), p->nVars );
-    return vInfo;
+    return p->vInfo;
 }
 static int PexaManMarkup( PexaMan_t * p )
 {
@@ -40,7 +39,7 @@ static int PexaManMarkup( PexaMan_t * p )
     // assign functionality
     p->iVar = 1 + ( p->nNodes * CONST_THREE );
     // assign connectivity variables
-    for ( i = p->nVars; i < p->nObjs; i++ )
+    for ( i = p->nVars; ( i < p->nObjs ) && ( i < MAJ_NOBJS ); i++ )
     {
         for ( k = 0; k < 2; k++ )
         {
@@ -51,7 +50,7 @@ static int PexaManMarkup( PexaMan_t * p )
                 p->VarMarks[i][k][j] = p->iVar++;
                 continue;
             }
-            for ( j = p->pPars->fFewerVars ? 1 - k : 0; ( j < ( i - k ) ) && ( j < ( MAJ_NOBJS ) ); j++ )
+            for ( j = p->pPars->fFewerVars ? 1 - k : 0; ( j < ( i - k ) ) && ( j < MAJ_NOBJS ); j++ )
             {
                 Vec_WecPush( p->vOutList, j, Abc_Var2Lit( p->iVar, 0 ) );
                 p->VarMarks[i][k][j] = p->iVar++;
