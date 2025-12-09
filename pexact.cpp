@@ -21,7 +21,8 @@
 
 static Vec_Wrd_t * PexaManTruthTables( PexaMan_t * p )
 {
-    Vec_Wrd_t * vInfo = p->vInfo = Vec_WrdStart( p->nWords * ( p->nObjs + 1 ) );
+    p->vInfo = Vec_WrdStart( p->nWords * ( p->nObjs + 1 ) );
+    Vec_Wrd_t * vInfo = p->vInfo;
     int i;
     for ( i = 0; i < p->nVars; i++ )
     {
@@ -428,10 +429,85 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
     }
     return 1;
 }
+static int AddCnfFaninCon( PexaMan_t * p, int i, int k, int n, int j )
+{
+    // fanin connectivity
+    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+    const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
+    for ( k = 0; k < 2; k++ )
+    {
+        for ( j = 0; j < p->nObjs; j++ )
+        {
+            if ( p->VarMarks[i][k][j] )
+            {
+                const int iBaseSatVarJ = p->iVar + ( CONST_THREE * ( j - p->nVars ) );
+                for ( n = 0; n < 2; n++ )
+                {
+                    int pList[CONST_THREE];
+                    int nList = 0;
+                    pList[nList++] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
+                    pList[nList++] = Abc_Var2Lit( iBaseSatVarI + k, n );
+                    if ( j >= p->nVars )
+                    {
+                        pList[nList++] = Abc_Var2Lit( iBaseSatVarJ + 2, static_cast<bool>( n == 0 ) );
+                    } else if ( p->VarVals[j] == n )
+                    {
+                        continue;
+                    }
+                    if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
+                    {
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+}
+static int AddCnfNodeFunc( PexaMan_t * p, int iMint, int i, int k, int n, int j )
+{
+    const int value = Abc_TtGetBit( p->pTruth, iMint );
+    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+    const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
+    for ( n = 0; n < 2; n++ )
+    {
+        if ( i == p->nObjs - 1 && n == value )
+        {
+            continue;
+        }
+        for ( k = 0; k < 4; k++ )
+        {
+            int pList[4];
+            int nList = 0;
+            if ( k == 0 && n == 1 )
+            {
+                continue;
+            }
+            pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 0, ( k & 1 ) );
+            pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 1, ( k >> 1 ) );
+            if ( i != p->nObjs - 1 )
+            {
+                pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 2, static_cast<bool>( n == 0 ) );
+            }
+            if ( k > 0 )
+            {
+                pList[nList++] = Abc_Var2Lit( iVarStart + k - 1, n );
+            }
+            assert( nList <= 4 );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
+            {
+                return 0;
+            }
+        }
+    }
+}
 static int PexaManAddCnf( PexaMan_t * p, int iMint )
 {
     // save minterm values
-    int i, k, n, j, value = Abc_TtGetBit( p->pTruth, iMint );
+    int i;
+    int k;
+    int n;
+    int j;
+    // const int value = Abc_TtGetBit( p->pTruth, iMint );
     for ( i = 0; i < p->nVars; i++ )
     {
         p->VarVals[i] = ( iMint >> i ) & 1;
@@ -441,68 +517,9 @@ static int PexaManAddCnf( PexaMan_t * p, int iMint )
     for ( i = p->nVars; i < p->nObjs; i++ )
     {
         // fanin connectivity
-        const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
-        const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
-        for ( k = 0; k < 2; k++ )
-        {
-            for ( j = 0; j < p->nObjs; j++ )
-            {
-                if ( p->VarMarks[i][k][j] )
-                {
-                    const int iBaseSatVarJ = p->iVar + ( CONST_THREE * ( j - p->nVars ) );
-                    for ( n = 0; n < 2; n++ )
-                    {
-                        int pList[CONST_THREE];
-                        int nList = 0;
-                        pList[nList++] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
-                        pList[nList++] = Abc_Var2Lit( iBaseSatVarI + k, n );
-                        if ( j >= p->nVars )
-                        {
-                            pList[nList++] = Abc_Var2Lit( iBaseSatVarJ + 2, static_cast<bool>( n == 0 ) );
-                        } else if ( p->VarVals[j] == n )
-                        {
-                            continue;
-                        }
-                        if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
-                        {
-                            return 0;
-                        }
-                    }
-                }
-            }
-        }
+        AddCnfFaninCon( p, i, k, n, j );
         // node functionality
-        for ( n = 0; n < 2; n++ )
-        {
-            if ( i == p->nObjs - 1 && n == value )
-            {
-                continue;
-            }
-            for ( k = 0; k < 4; k++ )
-            {
-                int pList[4];
-                int nList = 0;
-                if ( k == 0 && n == 1 )
-                {
-                    continue;
-                }
-                pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 0, ( k & 1 ) );
-                pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 1, ( k >> 1 ) );
-                if ( i != p->nObjs - 1 )
-                {
-                    pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 2, static_cast<bool>( n == 0 ) );
-                }
-                if ( k > 0 )
-                {
-                    pList[nList++] = Abc_Var2Lit( iVarStart + k - 1, n );
-                }
-                assert( nList <= 4 );
-                if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
-                {
-                    return 0;
-                }
-            }
-        }
+        AddCnfNodeFunc( p, iMint, i, k, n, j );
     }
 
     p->iVar += CONST_THREE * p->nNodes;

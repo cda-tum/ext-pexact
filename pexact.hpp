@@ -54,8 +54,8 @@ static inline int PexaManEval( PexaMan_t * p );
 int ValueNthBit( int value, int n );
 static void PexaManPrintSolution( PexaMan_t * p, int fCompl );
 int PexaManGetAct( PexaMan_t * p );
-static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd );
-static int PexaManAddCnf( PexaMan_t * p, int iMint );
+static int AddCnfStart( PexaMan_t * p, int fOnlyAnd );
+static int AddCnf( PexaMan_t * p, int iMint );
 void PowerExactSynthesisBase( Bmc_EsPar_t * pPars );
 
 
