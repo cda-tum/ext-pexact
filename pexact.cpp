@@ -438,7 +438,7 @@ static int AddCnfStartOutUsed( PexaMan_t * p, int i )
     }
     return 1;
 }
-static int AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pList2[2] )
+static int AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pList2[2], int fOnlyAnd )
 {
     int k = 0;
     int j = 0;
@@ -471,6 +471,11 @@ static int AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pLi
         {
             return 0;
         }
+
+        if ( AddCnfTwoInputFunc( p, fOnlyAnd, i, k, pList ) == 0 )
+        {
+            return 0;
+        }
     }
     return 1;
 }
@@ -479,12 +484,10 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
     int pList[MAJ_NOBJS];
     int pList2[2];
     int i = 0;
-    int j = 0;
-    int k = 0;
     // input constraints
     for ( i = p->nVars; i < p->nObjs; i++ )
     {
-        if ( AddCnfStartInner( p, i, pList, pList2 ) == 0 )
+        if ( AddCnfStartInner( p, i, pList, pList2, fOnlyAnd ) == 0 )
         {
             return 0;
         }
@@ -523,10 +526,11 @@ static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int j )
     return 1;
 }
 
-static int AddCnfFaninCon( PexaMan_t * p, int i, int j )
+static int AddCnfFaninCon( PexaMan_t * p, int i )
 {
     // fanin connectivity
     int k = 0;
+    int j = 0;
     for ( k = 0; k < 2; k++ )
     {
         for ( j = 0; j < p->nObjs; j++ )
@@ -586,7 +590,6 @@ static int PexaManAddCnf( PexaMan_t * p, int iMint )
 {
     // save minterm values
     int i = 0;
-    int j = 0;
     // const int value = Abc_TtGetBit( p->pTruth, iMint );
     for ( i = 0; i < p->nVars; i++ )
     {
@@ -597,7 +600,7 @@ static int PexaManAddCnf( PexaMan_t * p, int iMint )
     for ( i = p->nVars; i < p->nObjs; i++ )
     {
         // fanin connectivity
-        if ( AddCnfFaninCon( p, i, j ) == 0 )
+        if ( AddCnfFaninCon( p, i ) == 0 )
         {
             return 0;
         }
