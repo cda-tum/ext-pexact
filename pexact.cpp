@@ -314,6 +314,105 @@ int PexaManGetAct( PexaMan_t * p )
     }
     return sumAct;
 }
+
+static int AddCnfInpUniq( PexaMan_t * p, int n, int m, int nList, int pList[MAJ_NOBJS], int pList2[2] )
+{
+    for ( n = 0; n < nList; n++ )
+    {
+        for ( m = n + 1; m < nList; m++ )
+        {
+            pList2[0] = Abc_LitNot( pList[n] );
+            pList2[1] = Abc_LitNot( pList[m] );
+            if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
+            {
+                return 0;
+            }
+        }
+    }
+}
+
+static int AddCnfSymBreaking( PexaMan_t * p, int fOnlyAnd, int i, int j, int k, int n, int pList2[2] )
+{
+    // symmetry breaking
+
+    for ( j = 0; j < p->nObjs; j++ )
+    {
+        if ( p->VarMarks[i][k][j] )
+        {
+            for ( n = j; n < p->nObjs; n++ )
+            {
+                if ( p->VarMarks[i][k + 1][n] )
+                {
+                    pList2[0] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
+                    pList2[1] = Abc_Var2Lit( p->VarMarks[i][k + 1][n], 1 );
+                    if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
+                    {
+                        return 0;
+                    }
+                }
+            }
+        }
+    }
+}
+
+static int AddCnfNodeOrdering( PexaMan_t * p, int fOnlyAnd, int i, int j, int k, int m, int n, int pList2[2] )
+{
+    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+    // node ordering
+    for ( j = p->nVars; j < i; j++ )
+        for ( n = 0; n < p->nObjs; n++ )
+            if ( p->VarMarks[i][0][n] )
+                for ( m = n + 1; m < p->nObjs; m++ )
+                    if ( p->VarMarks[j][0][m] )
+                    {
+                        pList2[0] = Abc_Var2Lit( p->VarMarks[i][0][n], 1 );
+                        pList2[1] = Abc_Var2Lit( p->VarMarks[j][0][m], 1 );
+                        if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
+                            return 0;
+                    }
+}
+
+static int AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int k, int pList[MAJ_NOBJS] )
+{
+    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+    // two input functions
+    for ( k = 0; k < CONST_THREE; k++ )
+    {
+        pList[0] = Abc_Var2Lit( iVarStart, static_cast<int>( k == 1 ) );
+        pList[1] = Abc_Var2Lit( iVarStart + 1, static_cast<int>( k == 2 ) );
+        pList[2] = Abc_Var2Lit( iVarStart + 2, static_cast<int>( k != 0 ) );
+        if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+        {
+            return 0;
+        }
+    }
+    if ( fOnlyAnd )
+    {
+        pList[0] = static_cast<int>( Abc_Var2Lit( iVarStart, 1 ) );
+        pList[1] = static_cast<int>( Abc_Var2Lit( iVarStart + 1, 1 ) );
+        pList[2] = static_cast<int>( Abc_Var2Lit( iVarStart + 2, 0 ) );
+        if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+        {
+            return 0;
+        }
+    }
+}
+
+static int AddCnfStartOutUsed( PexaMan_t * p, int i )
+{
+    // outputs should be used
+    for ( i = 0; i < p->nObjs - 1; i++ )
+    {
+        Vec_Int_t * vArray = Vec_WecEntry( p->vOutList, i );
+
+        assert( Vec_IntSize( vArray ) > 0 );
+        if ( !sat_solver_addclause( p->pSat, Vec_IntArray( vArray ), Vec_IntLimit( vArray ) ) )
+        {
+            return 0;
+        }
+    }
+}
+
 static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
 {
     int pList[MAJ_NOBJS];
@@ -343,90 +442,24 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
             {
                 return 0;
             }
-            for ( n = 0; n < nList; n++ )
-            {
-                for ( m = n + 1; m < nList; m++ )
-                {
-                    pList2[0] = Abc_LitNot( pList[n] );
-                    pList2[1] = Abc_LitNot( pList[m] );
-                    if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
-                    {
-                        return 0;
-                    }
-                }
-            }
+            AddCnfInpUniq( p, n, m, nList, pList, pList2 );
             if ( k == 1 )
             {
                 break;
             }
             // symmetry breaking
 
-            for ( j = 0; j < p->nObjs; j++ )
-            {
-                if ( p->VarMarks[i][k][j] )
-                {
-                    for ( n = j; n < p->nObjs; n++ )
-                    {
-                        if ( p->VarMarks[i][k + 1][n] )
-                        {
-                            pList2[0] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
-                            pList2[1] = Abc_Var2Lit( p->VarMarks[i][k + 1][n], 1 );
-                            if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
-                            {
-                                return 0;
-                            }
-                        }
-                    }
-                }
-            }
+            AddCnfSymBreaking( p, fOnlyAnd, i, j, k, n, pList2 );
         }
 #ifdef USE_NODE_ORDER
         // node ordering
-        for ( j = p->nVars; j < i; j++ )
-            for ( n = 0; n < p->nObjs; n++ )
-                if ( p->VarMarks[i][0][n] )
-                    for ( m = n + 1; m < p->nObjs; m++ )
-                        if ( p->VarMarks[j][0][m] )
-                        {
-                            pList2[0] = Abc_Var2Lit( p->VarMarks[i][0][n], 1 );
-                            pList2[1] = Abc_Var2Lit( p->VarMarks[j][0][m], 1 );
-                            if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
-                                return 0;
-                        }
+        AddCnfNodeOrdering( p, fOnlyAnd, i, j, k, m, n, pList2 );
 #endif
         // two input functions
-        for ( k = 0; k < CONST_THREE; k++ )
-        {
-            pList[0] = Abc_Var2Lit( iVarStart, static_cast<int>( k == 1 ) );
-            pList[1] = Abc_Var2Lit( iVarStart + 1, static_cast<int>( k == 2 ) );
-            pList[2] = Abc_Var2Lit( iVarStart + 2, static_cast<int>( k != 0 ) );
-            if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
-            {
-                return 0;
-            }
-        }
-        if ( fOnlyAnd )
-        {
-            pList[0] = static_cast<int>( Abc_Var2Lit( iVarStart, 1 ) );
-            pList[1] = static_cast<int>( Abc_Var2Lit( iVarStart + 1, 1 ) );
-            pList[2] = static_cast<int>( Abc_Var2Lit( iVarStart + 2, 0 ) );
-            if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
-            {
-                return 0;
-            }
-        }
+        AddCnfTwoInputFunc( p, fOnlyAnd, i, k, pList );
     }
     // outputs should be used
-    for ( i = 0; i < p->nObjs - 1; i++ )
-    {
-        Vec_Int_t * vArray = Vec_WecEntry( p->vOutList, i );
-
-        assert( Vec_IntSize( vArray ) > 0 );
-        if ( !sat_solver_addclause( p->pSat, Vec_IntArray( vArray ), Vec_IntLimit( vArray ) ) )
-        {
-            return 0;
-        }
-    }
+    AddCnfStartOutUsed( p, i );
     return 1;
 }
 static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int n, int j )
@@ -456,7 +489,6 @@ static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int n, int j )
 static int AddCnfFaninCon( PexaMan_t * p, int i, int k, int n, int j )
 {
     // fanin connectivity
-    const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
     for ( k = 0; k < 2; k++ )
     {
         for ( j = 0; j < p->nObjs; j++ )
@@ -468,7 +500,7 @@ static int AddCnfFaninCon( PexaMan_t * p, int i, int k, int n, int j )
         }
     }
 }
-static int AddCnfNodeFunc( PexaMan_t * p, int iMint, int i, int k, int n, int j )
+static int AddCnfNodeFunc( PexaMan_t * p, int iMint, int i, int k, int n )
 {
     const int value = Abc_TtGetBit( p->pTruth, iMint );
     const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
@@ -491,7 +523,7 @@ static int AddCnfNodeFunc( PexaMan_t * p, int iMint, int i, int k, int n, int j 
             pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 1, ( k >> 1 ) );
             if ( i != p->nObjs - 1 )
             {
-                pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 2, static_cast<bool>( n == 0 ) );
+                pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 2, static_cast<int>( n == 0 ) );
             }
             if ( k > 0 )
             {
@@ -524,7 +556,7 @@ static int PexaManAddCnf( PexaMan_t * p, int iMint )
         // fanin connectivity
         AddCnfFaninCon( p, i, k, n, j );
         // node functionality
-        AddCnfNodeFunc( p, iMint, i, k, n, j );
+        AddCnfNodeFunc( p, iMint, i, k, n );
     }
 
     p->iVar += CONST_THREE * p->nNodes;
