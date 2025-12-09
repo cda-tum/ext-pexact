@@ -39,7 +39,7 @@ static int PexaManMarkup( PexaMan_t * p )
     // assign functionality
     p->iVar = 1 + ( p->nNodes * CONST_THREE );
     // assign connectivity variables
-    for ( i = p->nVars; ( i < p->nObjs ) && ( i < MAJ_NOBJS ); i++ )
+    for ( i = p->nVars; ( i < p->nObjs ) && ( i < MAJ_NOBJS ) && ( i >= 0 ); i++ )
     {
         for ( k = 0; k < 2; k++ )
         {
@@ -50,7 +50,7 @@ static int PexaManMarkup( PexaMan_t * p )
                 p->VarMarks[i][k][j] = p->iVar++;
                 continue;
             }
-            for ( j = p->pPars->fFewerVars ? 1 - k : 0; ( j < ( i - k ) ) && ( j < MAJ_NOBJS ); j++ )
+            for ( j = p->pPars->fFewerVars ? 1 - k : 0; ( j < ( i - k ) ) && ( j < MAJ_NOBJS ) && ( j >= 0 ); j++ )
             {
                 Vec_WecPush( p->vOutList, j, Abc_Var2Lit( p->iVar, 0 ) );
                 p->VarMarks[i][k][j] = p->iVar++;
@@ -227,11 +227,11 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         printf( "\n" );
     }
     const int iVarStart = 1 + ( CONST_THREE * ( p->nObjs - 1 - p->nVars ) );
-    int fOut[4];
-    fOut[0] = fCompl;
-    fOut[1] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) );
-    fOut[2] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) );
-    fOut[3] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) );
+    int fOut[CONST_FOUR];
+    fOut[CONST_ZERO] = fCompl;
+    fOut[CONST_ONE] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) );
+    fOut[CONST_TWO] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) );
+    fOut[CONST_THREE] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) );
     const int i0 = PexaManFindFanin( p, p->nObjs - 1, 0 );
     const int i1 = PexaManFindFanin( p, p->nObjs - 1, 1 );
     printf( "i=%d:", p->nObjs - 1 );

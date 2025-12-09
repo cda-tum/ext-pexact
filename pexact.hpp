@@ -19,7 +19,11 @@
 #include <stdio.h>
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
+const int CONST_ZERO = 0;
+const int CONST_ONE = 1;
+const int CONST_TWO = 2;
 const int CONST_THREE = 3;
+const int CONST_FOUR = 4;
 const int CONST_SIX = 6;
 const int CONST_TEN = 10;
 
