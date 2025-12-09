@@ -429,10 +429,33 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
     }
     return 1;
 }
+static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int n, int j )
+{
+    const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
+    const int iBaseSatVarJ = p->iVar + ( CONST_THREE * ( j - p->nVars ) );
+    for ( n = 0; n < 2; n++ )
+    {
+        int pList[CONST_THREE];
+        int nList = 0;
+        pList[nList++] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
+        pList[nList++] = Abc_Var2Lit( iBaseSatVarI + k, n );
+        if ( j >= p->nVars )
+        {
+            pList[nList++] = Abc_Var2Lit( iBaseSatVarJ + 2, static_cast<int>( n == 0 ) );
+        } else if ( p->VarVals[j] == n )
+        {
+            continue;
+        }
+        if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
+        {
+            return 0;
+        }
+    }
+}
+
 static int AddCnfFaninCon( PexaMan_t * p, int i, int k, int n, int j )
 {
     // fanin connectivity
-    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
     const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
     for ( k = 0; k < 2; k++ )
     {
@@ -440,25 +463,7 @@ static int AddCnfFaninCon( PexaMan_t * p, int i, int k, int n, int j )
         {
             if ( p->VarMarks[i][k][j] )
             {
-                const int iBaseSatVarJ = p->iVar + ( CONST_THREE * ( j - p->nVars ) );
-                for ( n = 0; n < 2; n++ )
-                {
-                    int pList[CONST_THREE];
-                    int nList = 0;
-                    pList[nList++] = Abc_Var2Lit( p->VarMarks[i][k][j], 1 );
-                    pList[nList++] = Abc_Var2Lit( iBaseSatVarI + k, n );
-                    if ( j >= p->nVars )
-                    {
-                        pList[nList++] = Abc_Var2Lit( iBaseSatVarJ + 2, static_cast<bool>( n == 0 ) );
-                    } else if ( p->VarVals[j] == n )
-                    {
-                        continue;
-                    }
-                    if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
-                    {
-                        return 0;
-                    }
-                }
+                AddCnfFaninConInner( p, i, k, n, j );
             }
         }
     }
