@@ -51,7 +51,7 @@ static int PexaManMarkup( PexaMan_t * p )
                 p->VarMarks[i][k][j] = p->iVar++;
                 continue;
             }
-            for ( j = p->pPars->fFewerVars ? 1 - k : 0; j < i - k; j++ )
+            for ( j = p->pPars->fFewerVars ? 1 - k : 0; ( j < ( i - k ) ) && ( j < ( MAJ_NOBJS ) ); j++ )
             {
                 Vec_WecPush( p->vOutList, j, Abc_Var2Lit( p->iVar, 0 ) );
                 p->VarMarks[i][k][j] = p->iVar++;
@@ -245,7 +245,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     }
     printf( "\n" );
     printf( "\n" );
-    int sumAct = PexaManGetAct( p );
+    const int sumAct = PexaManGetAct( p );
     printf( "Switching Activity=%d\n", sumAct );
     printf( "Number of Gates: r=%d\n", p->nNodes );
 }
