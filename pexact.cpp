@@ -438,7 +438,42 @@ static int AddCnfStartOutUsed( PexaMan_t * p, int i )
     }
     return 1;
 }
-
+static int AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pList2[2] )
+{
+    int k = 0;
+    int j = 0;
+    for ( k = 0; k < 2; k++ )
+    {
+        int nList = 0;
+        for ( j = 0; j < p->nObjs; j++ )
+        {
+            if ( p->VarMarks[i][k][j] )
+            {
+                pList[nList++] = Abc_Var2Lit( p->VarMarks[i][k][j], 0 );
+            }
+        }
+        assert( nList > 0 );
+        // input uniqueness
+        if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
+        {
+            return 0;
+        }
+        if ( AddCnfInpUniq( p, nList, pList, pList2 ) == 0 )
+        {
+            return 0;
+        }
+        if ( k == 1 )
+        {
+            break;
+        }
+        // symmetry breaking
+        if ( AddCnfSymBreaking( p, i, k, pList2 ) == 0 )
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
 static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
 {
     int pList[MAJ_NOBJS];
@@ -449,38 +484,7 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
     // input constraints
     for ( i = p->nVars; i < p->nObjs; i++ )
     {
-        for ( k = 0; k < 2; k++ )
-        {
-            int nList = 0;
-            for ( j = 0; j < p->nObjs; j++ )
-            {
-                if ( p->VarMarks[i][k][j] )
-                {
-                    pList[nList++] = Abc_Var2Lit( p->VarMarks[i][k][j], 0 );
-                }
-            }
-            assert( nList > 0 );
-            // input uniqueness
-            if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
-            {
-                return 0;
-            }
-            if ( AddCnfInpUniq( p, nList, pList, pList2 ) == 0 )
-            {
-                return 0;
-            }
-            if ( k == 1 )
-            {
-                break;
-            }
-            // symmetry breaking
-            if ( AddCnfSymBreaking( p, i, k, pList2 ) == 0 )
-            {
-                return 0;
-            }
-        }
-        // two input functions
-        if ( AddCnfTwoInputFunc( p, fOnlyAnd, i, k, pList ) == 0 )
+        if ( AddCnfStartInner( p, i, pList, pList2 ) == 0 )
         {
             return 0;
         }
@@ -493,8 +497,9 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
 
     return 1;
 }
-static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int n, int j )
+static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int j )
 {
+    int n = 0;
     const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
     const int iBaseSatVarJ = p->iVar + ( CONST_THREE * ( j - p->nVars ) );
     for ( n = 0; n < 2; n++ )
@@ -518,7 +523,7 @@ static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int n, int j )
     return 1;
 }
 
-static int AddCnfFaninCon( PexaMan_t * p, int i, int n, int j )
+static int AddCnfFaninCon( PexaMan_t * p, int i, int j )
 {
     // fanin connectivity
     int k = 0;
@@ -528,7 +533,7 @@ static int AddCnfFaninCon( PexaMan_t * p, int i, int n, int j )
         {
             if ( p->VarMarks[i][k][j] )
             {
-                if ( AddCnfFaninConInner( p, i, k, n, j ) == 0 )
+                if ( AddCnfFaninConInner( p, i, k, j ) == 0 )
                 {
                     return 0;
                 }
@@ -537,9 +542,10 @@ static int AddCnfFaninCon( PexaMan_t * p, int i, int n, int j )
     }
     return 1;
 }
-static int AddCnfNodeFunc( PexaMan_t * p, int iMint, int i, int n )
+static int AddCnfNodeFunc( PexaMan_t * p, int iMint, int i )
 {
     int k = 0;
+    int n = 0;
     const int value = Abc_TtGetBit( p->pTruth, iMint );
     const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
     const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
@@ -580,7 +586,6 @@ static int PexaManAddCnf( PexaMan_t * p, int iMint )
 {
     // save minterm values
     int i = 0;
-    int n = 0;
     int j = 0;
     // const int value = Abc_TtGetBit( p->pTruth, iMint );
     for ( i = 0; i < p->nVars; i++ )
@@ -592,13 +597,15 @@ static int PexaManAddCnf( PexaMan_t * p, int iMint )
     for ( i = p->nVars; i < p->nObjs; i++ )
     {
         // fanin connectivity
-        if ( AddCnfFaninCon( p, i, n, j ) == 0 )
+        if ( AddCnfFaninCon( p, i, j ) == 0 )
         {
             return 0;
         }
         // node functionality
-        if ( AddCnfNodeFunc( p, iMint, i, n ) == 0 )
+        if ( AddCnfNodeFunc( p, iMint, i ) == 0 )
+        {
             return 0;
+        }
     }
 
     p->iVar += CONST_THREE * p->nNodes;
