@@ -193,15 +193,6 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         }
         printf( " )\n" );
     }
-    printf( "Printing P Variables...\n" );
-    // int n_p = pow( 2, p->nVars - 1 );
-    // for ( int i = 0; i < p->nNodes - 1; i++ )
-    // {
-    //     for ( int j = 0; j < n_p; j++ )
-    //     {
-    //         printf( "p_%d_%d has value %d\n", p->nVars + i, j + 1, sat_solver_var_value( p->pSat, p->i_p + n_p * i + j ) );
-    //     }
-    // }
     printf( "Printing overall Truth Table...\n" );
     const int len = ( p->nObjs ) * ( pow( 2, p->nVars ) );
     int xIt[len];
@@ -254,26 +245,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     }
     printf( "\n" );
     printf( "\n" );
-    int sumAct = 0;
-    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
-    {
-        int sum0 = 0;
-        int sum1 = 0;
-        int minSum = 0;
-        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
-        {
-            const int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
-            if ( xIt[index] == 1 )
-            {
-                sum1++;
-            } else
-            {
-                sum0++;
-            }
-        }
-        minSum = sum1 <= sum0 ? sum1 : sum0;
-        sumAct += 2 * minSum * ( pow( 2, p->nVars ) - minSum );
-    }
+    int sumAct = PexaManGetAct( p );
     printf( "Switching Activity=%d\n", sumAct );
     printf( "Number of Gates: r=%d\n", p->nNodes );
 }
@@ -367,33 +339,6 @@ static int AddCnfSymBreaking( PexaMan_t * p, int i, int k, int pList2[2] )
         }
     }
     return 1;
-}
-
-static int AddCnfNodeOrdering( PexaMan_t * p, int i, int j, int m, int n, int pList2[2] )
-{
-    // node ordering
-    for ( j = p->nVars; j < i; j++ )
-    {
-        for ( n = 0; n < p->nObjs; n++ )
-        {
-            if ( p->VarMarks[i][0][n] )
-            {
-                for ( m = n + 1; m < p->nObjs; m++ )
-                {
-                    if ( p->VarMarks[j][0][m] )
-                    {
-                        pList2[0] = Abc_Var2Lit( p->VarMarks[i][0][n], 1 );
-                        pList2[1] = Abc_Var2Lit( p->VarMarks[j][0][m], 1 );
-                        if ( !sat_solver_addclause( p->pSat, pList2, pList2 + 2 ) )
-                        {
-                            return 0;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return 0;
 }
 
 static int AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int k, int pList[MAJ_NOBJS] )
