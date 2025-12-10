@@ -300,7 +300,6 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     int iVar;
 
     printf( "Realization of given %d-input function using %d two-input gates complementary=%d:\n", p->nVars, p->nNodes, fCompl );
-    //    for ( i = p->nVars + 2; i < p->nObjs; i++ )
     for ( i = p->nObjs - 1; i >= p->nVars; i-- )
     {
         const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
@@ -342,7 +341,6 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
             xIt[index] = ValueNthBit( t, i );
         }
     }
-
     for ( int i = p->nVars; i < p->nObjs - 1; i++ )
     {
         xIt[i * nTruth] = 0;
@@ -373,9 +371,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     printf( "i=%d:", p->nObjs - 1 );
     for ( int t = 0; t < nTruth; t++ )
     {
-        const int index0 = ( i0 * nTruth ) + t;
-        const int index1 = ( i1 * nTruth ) + t;
-        const int index = ( xIt[index1] << 1 ) + ( xIt[index0] );
+        const int index = ( xIt[( i1 * nTruth ) + t] << 1 ) + ( xIt[( i0 * nTruth ) + t] );
         printf( "%d", fOut[index] );
     }
     printf( "\n" );
