@@ -194,7 +194,7 @@ static inline int PexaManEval( PexaMan_t * p )
     int k;
     int iMint;
     word * pFanins[2];
-    for ( i = p->nVars; i < p->nObjs; i++ )
+    for ( i = p->nVars; ( i < p->nObjs ) && ( i < MAJ_NOBJS ); i++ )
     {
         const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
         for ( k = 0; k < 2; k++ )
