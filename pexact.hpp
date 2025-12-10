@@ -27,6 +27,14 @@ const int CONST_FOUR = 4;
 const int CONST_SIX = 6;
 const int CONST_TEN = 10;
 
+/*
+ * @brief pexact struct.
+ *
+ * @details
+ * Containing SAT solver, starting index of variables and parameters
+ *
+ *
+ */
 typedef struct PexaMan_t_ PexaMan_t;
 struct PexaMan_t_ {
     Bmc_EsPar_t * pPars;                    // parameters
@@ -48,7 +56,7 @@ struct PexaMan_t_ {
     sat_solver * pSat;                      // SAT solver
 };
 
-static inline word * PexaManTruth( PexaMan_t * p, int v ) { return Vec_WrdEntryP( p->vInfo, p->nWords * v ); }
+static inline word * PexaManTruth( PexaMan_t * p, int v );
 static Vec_Wrd_t * PexaManTruthTables( PexaMan_t * p );
 static int PexaManMarkup( PexaMan_t * p );
 static PexaMan_t * PexaManAlloc( Bmc_EsPar_t * pPars, word * pTruth );

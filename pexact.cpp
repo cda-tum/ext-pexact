@@ -17,8 +17,28 @@
 
 #include <math.h>
 #include <stdio.h>
-
-
+/*
+ * @brief Evaluates truth table pointers.
+ *
+ * @details Returns pointer to the v'th input truth table using Vec_WrdEntryP.
+ *
+ * @param p: pexact struct.
+ * @param v: v'th input of the network.
+ *
+ * @return Word pointer.
+ *
+ */
+static inline word * PexaManTruth( PexaMan_t * p, int v ) { return Vec_WrdEntryP( p->vInfo, p->nWords * v ); }
+/*
+ * @brief Initialization of truth table variables.
+ *
+ * @details Initializes p->vInfo and sets Abc_TtIthVar.
+ *
+ * @param p: Pexact struct.
+ *
+ * @return Vec_Wrd_t pointer to p->vInfo.
+ *
+ */
 static Vec_Wrd_t * PexaManTruthTables( PexaMan_t * p )
 {
     p->vInfo = Vec_WrdStart( p->nWords * ( p->nObjs + 1 ) );
@@ -30,6 +50,16 @@ static Vec_Wrd_t * PexaManTruthTables( PexaMan_t * p )
     //Dau_DsdPrintFromTruth( PexaManTruth(p, p->nObjs), p->nVars );
     return p->vInfo;
 }
+/*
+ * @brief Initialization od variables for CNF encoding.
+ *
+ * @details Initializes all required variables for CNF including variables for: truth-tables, connectivity, functinallity of gates.
+ *
+ * @param p: Pexact struct.
+ *
+ * @return int as next available free variable.
+ *
+ */
 static int PexaManMarkup( PexaMan_t * p )
 {
     int i;
@@ -74,6 +104,17 @@ static int PexaManMarkup( PexaMan_t * p )
     }
     return p->iVar;
 }
+/*
+ * @brief Allocation pexact struct.
+ *
+ * @details Allocates all required variables for pexact.
+ *
+ * @param pPars: Terminal input parameters struct from 'pexact -...' command.
+ * @param pTruth: Truth table word pointer.
+ *
+ * @return PexaMan_t pointer as allocated pexact struct.
+ *
+ */
 static PexaMan_t * PexaManAlloc( Bmc_EsPar_t * pPars, word * pTruth )
 {
     PexaMan_t * p = ABC_CALLOC( PexaMan_t, 1 );
@@ -95,6 +136,13 @@ static PexaMan_t * PexaManAlloc( Bmc_EsPar_t * pPars, word * pTruth )
     sat_solver_setnvars( p->pSat, p->iVar );
     return p;
 }
+/*
+ * @brief Deallocation pexact struct.
+ *
+ * @details Deallocates all previous allocated memory for pexact struct.
+ *
+ * @param p: Pexact struct.
+ */
 static void PexaManFree( PexaMan_t * p )
 {
     sat_solver_delete( p->pSat );
@@ -102,6 +150,17 @@ static void PexaManFree( PexaMan_t * p )
     Vec_WecFree( p->vOutList );
     ABC_FREE( p );
 }
+/*
+ * @brief Fanin evaluation.
+ *
+ * @details Determines based on a solution from SAT solver, which fanin a gate has. Return variable indicating the k'th input of gate i
+ *
+ * @param p: Pexact struct.
+ * @param i: gate i.
+ * @param k: input k of gate i.
+ *
+ * @return  variable of input (either fanin or other gate).
+ */
 static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
 {
     int j;
@@ -118,6 +177,16 @@ static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
     assert( count == 1 );
     return iVar;
 }
+/*
+ * @brief Evaluation of turth table.
+ *
+ * @details Determines based on a solution from SAT solver, if the resulting truth-table matches with the specified one. Needed for CEGAR optimizattion approach.
+ *          Returns first mismatching minterm.
+ *
+ * @param p: Pexact struct.
+ *
+ * @return  Index of first mismatching minterm.
+ */
 static inline int PexaManEval( PexaMan_t * p )
 {
     const int flag = 0;
@@ -154,10 +223,29 @@ static inline int PexaManEval( PexaMan_t * p )
     assert( iMint < ( 1 << p->nVars ) );
     return iMint;
 }
+/*
+ * @brief Evaluation n'th bit in value for binary representation.
+ *
+ * @details Determines value of n'th bit of integer value, assuming a binary representation.
+ *
+ * @param value: Binary Integer.
+ * @param n: n'th bit.
+ *
+ * @return  Returns either 0 or 1.
+ */
 int ValueNthBit( int value, int n )
 {
     return ( value >> n ) & 1;
 }
+/*
+ * @brief Printing solution of SAT solver.
+ *
+ * @details Extracting information from solution and printing connectivity and truth tables.
+ *
+ * @param p: Pexact struct.
+ * @param fCompl: Parameter indicating if least gate is complemented or not.
+ *
+ */
 static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
 {
     int i;
@@ -173,7 +261,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         const int val3 = sat_solver_var_value( p->pSat, iVarStart + 2 );
         if ( i == p->nObjs - 1 && fCompl )
         {
-            printf( "%02d = 4\'b%d%d%d1(", i, static_cast<int>( val3 ), static_cast<int>( val2 ), static_cast<int>( val1 ) );
+            printf( "%02d = 4\'b%d%d%d1(", i, static_cast<int>( val3 == 0 ), static_cast<int>( val2 == 0 ), static_cast<int>( val1 == 0 ) );
         } else
         {
             printf( "%02d = 4\'b%d%d%d0(", i, val3, val2, val1 );
@@ -248,6 +336,15 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     printf( "Switching Activity=%d\n", sumAct );
     printf( "Number of Gates: r=%d\n", p->nNodes );
 }
+/*
+ * @brief Evaluates resulting switching activity.
+ *
+ * @details Extracting information from solution and calculating overall switching activity of network.
+ *
+ * @param p: Pexact struct.
+ *
+ * @return  Returns switching activity.
+ */
 int PexaManGetAct( PexaMan_t * p )
 {
     const int len = ( p->nObjs ) * ( pow( 2, p->nVars ) );
@@ -285,7 +382,18 @@ int PexaManGetAct( PexaMan_t * p )
     }
     return sumAct;
 }
-
+/*
+ * @brief Adding Input Uniqueness CNF encoding.
+ *
+ * @details Adding constraints to encoding that ensure that not two gates exist that use the same two inputs.
+ *
+ * @param p: Pexact struct.
+ * @param nList: Iteration.
+ * @param pList: List variables.
+ * @param pList2: List variables.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfInpUniq( PexaMan_t * p, int nList, int pList[MAJ_NOBJS], int pList2[2] )
 {
     int m = 0;
@@ -304,7 +412,19 @@ static int AddCnfInpUniq( PexaMan_t * p, int nList, int pList[MAJ_NOBJS], int pL
     }
     return 1;
 }
-
+/*
+ * @brief Adding symmetry breaking constrains helper.
+ *
+ * @details Adding constraints to encoding that reduces overall search space. Inner helper function of AddCnfSymBreaking.
+ *
+ * @param p: Pexact struct.
+ * @param i: Gate iteration variable.
+ * @param j: Iteration variable over all objects(nVars inputs + nNodes internal nodes).
+ * @param k: Gate input iteration variable.
+ * @param pList2: List variables.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfSymBreakingInner( PexaMan_t * p, int i, int j, int k, int pList2[2] )
 {
     int n = 0;
@@ -322,7 +442,18 @@ static int AddCnfSymBreakingInner( PexaMan_t * p, int i, int j, int k, int pList
     }
     return 1;
 }
-
+/*
+ * @brief Adding symmetry breaking constrains.
+ *
+ * @details Adding constraints to encoding that reduces overall search space.
+ *
+ * @param p: Pexact struct.
+ * @param i: Gate iteration variable.
+ * @param k: Gate input iteration variable.
+ * @param pList2: List variables.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfSymBreaking( PexaMan_t * p, int i, int k, int pList2[2] )
 {
     // symmetry breaking
@@ -339,7 +470,19 @@ static int AddCnfSymBreaking( PexaMan_t * p, int i, int k, int pList2[2] )
     }
     return 1;
 }
-
+/*
+ * @brief Adding gate functionality constraints.
+ *
+ * @details Adding constraints to encoding that ensure that gates only behave as nontrivial operators.
+ *
+ * @param p: Pexact struct.
+ * @param fOnlyAnd: Least gate is inverted.
+ * @param i: Gate iteration variable.
+ * @param k: Gate input iteration variable.
+ * @param pList: List variables.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int k, int pList[MAJ_NOBJS] )
 {
     const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
@@ -366,7 +509,16 @@ static int AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int k, int pL
     }
     return 1;
 }
-
+/*
+ * @brief Constrining that every output should be used.
+ *
+ * @details Adding constraints to encoding that ensure that each output shall be used.
+ *
+ * @param p: Pexact struct.
+ * @param i: Gate iteration variable.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfStartOutUsed( PexaMan_t * p, int i )
 {
     // outputs should be used
@@ -382,6 +534,19 @@ static int AddCnfStartOutUsed( PexaMan_t * p, int i )
     }
     return 1;
 }
+/*
+ * @brief Inner helper function of PexaManAddCnfStart.
+ *
+ * @details Inner helper function of PexaManAddCnfStart. Adding all used constraints for each gate i.
+ *
+ * @param p: Pexact struct.
+ * @param fOnlyAnd: Least gate is inverted.
+ * @param i: Gate iteration variable.
+ * @param pList: List variables.
+ * @param pList2: List variables.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pList2[2], int fOnlyAnd )
 {
     int k = 0;
@@ -423,6 +588,16 @@ static int AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pLi
     }
     return 1;
 }
+/*
+ * @brief Adding basic constraints for pexact synthesis.
+ *
+ * @details Iterating over all gates and applying AddCnfStartInner to add all basic constraints.
+ *
+ * @param p: Pexact struct.
+ * @param fOnlyAnd: Least gate is inverted.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
 {
     int pList[MAJ_NOBJS];
@@ -444,6 +619,18 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
 
     return 1;
 }
+/*
+ * @brief Inner function adding fanin connectivity constraints.
+ *
+ * @details Inner function of AddCnfFaninCon. Constraining which output value a gate i has for which values of input.
+ *
+ * @param p: Pexact struct.
+ * @param i Gate iteration variable.
+ * @param k Truth table iteration variable 0,...,3.
+ * @param j All Objects(inputs+gates) iteration variable.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int j )
 {
     int n = 0;
@@ -469,7 +656,16 @@ static int AddCnfFaninConInner( PexaMan_t * p, int i, int k, int j )
     }
     return 1;
 }
-
+/*
+ * @brief Adding fanin connectivity constraints.
+ *
+ * @details Constraining which output value a gate i has for which values of input.
+ *
+ * @param p: Pexact struct.
+ * @param i Gate iteration variable.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfFaninCon( PexaMan_t * p, int i )
 {
     // fanin connectivity
@@ -490,6 +686,17 @@ static int AddCnfFaninCon( PexaMan_t * p, int i )
     }
     return 1;
 }
+/*
+ * @brief Adding fanin Node functionality constraints.
+ *
+ * @details Constraining which output value a gate i has depending on the functionality variables(AND,OR,XOR).
+ *
+ * @param p: Pexact struct.
+ * @param iMint: Minterm iteration variable.
+ * @param i Gate iteration variable.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int AddCnfNodeFunc( PexaMan_t * p, int iMint, int i )
 {
     int k = 0;
@@ -530,6 +737,17 @@ static int AddCnfNodeFunc( PexaMan_t * p, int iMint, int i )
     }
     return 1;
 }
+/*
+ * @brief Adding hole functionality constraintys for minterm iMint.
+ *
+ * @details Constraining functionality of logic network for a given minterm iMing.
+ *          Including fanin connectivity and gate functionality.
+ *
+ * @param p: Pexact struct.
+ * @param iMint: Minterm iteration variable.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
 static int PexaManAddCnf( PexaMan_t * p, int iMint )
 {
     // save minterm values
@@ -558,6 +776,16 @@ static int PexaManAddCnf( PexaMan_t * p, int iMint )
     p->iVar += CONST_THREE * p->nNodes;
     return 1;
 }
+/*
+ * @brief Running exact synthesis.
+ *
+ * @details Running exact synethesis. Calculating logic network with least amount of gates.
+ *          Iterating over gate count r. For each r checking if a solution exists. First solution
+ *          corresponds to minimum sized logic network.
+ *
+ * @param pPars: Input information from executed abc command.
+ *
+ */
 void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
 {
     int status;
@@ -590,7 +818,6 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
             }
         }
         status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
-        //////////////////////////
         if ( status == 1 )
         {
             break;
