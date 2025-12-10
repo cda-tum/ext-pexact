@@ -56,19 +56,6 @@ struct PexaMan_t_ {
     sat_solver * pSat;                      // SAT solver
 };
 
-static inline word * PexaManTruth( PexaMan_t * p, int v );
-static Vec_Wrd_t * PexaManTruthTables( PexaMan_t * p );
-static int PexaManMarkup( PexaMan_t * p );
-static PexaMan_t * PexaManAlloc( Bmc_EsPar_t * pPars, word * pTruth );
-static void PexaManFree( PexaMan_t * p );
-static inline int PexaManFindFanin( PexaMan_t * p, int i, int k );
-static inline int PexaManEval( PexaMan_t * p );
-int ValueNthBit( int value, int n );
-static void PexaManPrintSolution( PexaMan_t * p, int fCompl );
-int PexaManGetAct( PexaMan_t * p );
-static int AddCnfStart( PexaMan_t * p, int fOnlyAnd );
-static int AddCnf( PexaMan_t * p, int iMint );
 void PowerExactSynthesisBase( Bmc_EsPar_t * pPars );
-
 
 #endif

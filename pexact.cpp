@@ -238,6 +238,53 @@ int ValueNthBit( int value, int n )
     return ( value >> n ) & 1;
 }
 /*
+ * @brief Evaluates resulting switching activity.
+ *
+ * @details Extracting information from solution and calculating overall switching activity of network.
+ *
+ * @param p: Pexact struct.
+ *
+ * @return  Returns switching activity.
+ */
+int PexaManGetAct( PexaMan_t * p )
+{
+    const int mulPot = ( pow( 2, p->nVars ) );
+    const int len = ( p->nObjs ) * mulPot;
+    int xIt[len];
+    const int xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
+    for ( int i = p->nVars; i < p->nVars + p->nNodes - 1; i++ )
+    {
+        const int index = i * mulPot;
+        xIt[index] = 0;
+        for ( int t = 1; t < pow( 2, p->nVars ); t++ )
+        {
+            const int index = ( i * mulPot ) + t;
+            xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
+        }
+    }
+    int sumAct = 0;
+    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
+    {
+        int sum0 = 0;
+        int sum1 = 0;
+        int minSum = 0;
+        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+        {
+            const int index = ( i * mulPot ) + t;
+            if ( xIt[index] == 1 )
+            {
+                sum1++;
+            } else
+            {
+                sum0++;
+            }
+        }
+        minSum = sum1 <= sum0 ? sum1 : sum0;
+        sumAct += 2 * minSum * ( pow( 2, p->nVars ) - minSum );
+    }
+    return sumAct;
+}
+/*
  * @brief Printing solution of SAT solver.
  *
  * @details Extracting information from solution and printing connectivity and truth tables.
@@ -317,9 +364,9 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     const int iVarStart = 1 + ( CONST_THREE * ( p->nObjs - 1 - p->nVars ) );
     int fOut[CONST_FOUR];
     fOut[CONST_ZERO] = fCompl;
-    fOut[CONST_ONE] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) );
-    fOut[CONST_TWO] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) );
-    fOut[CONST_THREE] = static_cast<bool>( fCompl ) ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 ) : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) );
+    fOut[CONST_ONE] = fCompl ? sat_solver_var_value( p->pSat, iVarStart ) == 0 : sat_solver_var_value( p->pSat, iVarStart );
+    fOut[CONST_TWO] = fCompl ? sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 : sat_solver_var_value( p->pSat, iVarStart + 1 );
+    fOut[CONST_THREE] = fCompl ? sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 : sat_solver_var_value( p->pSat, iVarStart + 2 );
     const int i0 = PexaManFindFanin( p, p->nObjs - 1, 0 );
     const int i1 = PexaManFindFanin( p, p->nObjs - 1, 1 );
     printf( "i=%d:", p->nObjs - 1 );
@@ -335,52 +382,6 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     const int sumAct = PexaManGetAct( p );
     printf( "Switching Activity=%d\n", sumAct );
     printf( "Number of Gates: r=%d\n", p->nNodes );
-}
-/*
- * @brief Evaluates resulting switching activity.
- *
- * @details Extracting information from solution and calculating overall switching activity of network.
- *
- * @param p: Pexact struct.
- *
- * @return  Returns switching activity.
- */
-int PexaManGetAct( PexaMan_t * p )
-{
-    const int len = ( p->nObjs ) * ( pow( 2, p->nVars ) );
-    int xIt[len];
-    const int xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
-    for ( int i = p->nVars; i < p->nVars + p->nNodes - 1; i++ )
-    {
-        const int index = i * ( pow( 2, p->nVars ) );
-        xIt[index] = 0;
-        for ( int t = 1; t < pow( 2, p->nVars ); t++ )
-        {
-            const int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
-            xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
-        }
-    }
-    int sumAct = 0;
-    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
-    {
-        int sum0 = 0;
-        int sum1 = 0;
-        int minSum = 0;
-        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
-        {
-            const int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
-            if ( xIt[index] == 1 )
-            {
-                sum1++;
-            } else
-            {
-                sum0++;
-            }
-        }
-        minSum = sum1 <= sum0 ? sum1 : sum0;
-        sumAct += 2 * minSum * ( pow( 2, p->nVars ) - minSum );
-    }
-    return sumAct;
 }
 /*
  * @brief Adding Input Uniqueness CNF encoding.
@@ -802,7 +803,8 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         Abc_TtNot( pTruth, p->nWords );
     }
     int r = 0;
-    while ( 1 )
+    const int maxNodes = 100;
+    while ( r < maxNodes )
     {
         PexaManFree( p );
         pPars->nNodes = r + 1;
@@ -820,9 +822,14 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
         if ( status == 1 )
         {
-            break;
+            PexaManPrintSolution( p, fCompl );
+            PexaManFree( p );
         }
         r++;
     }
-    PexaManPrintSolution( p, fCompl );
+    if ( r >= maxNodes )
+    {
+        printf( "No solution found within %d gates.\n", maxNodes );
+        PexaManFree( p );
+    }
 }
