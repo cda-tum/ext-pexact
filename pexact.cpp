@@ -166,7 +166,7 @@ static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
     int j;
     int count = 0;
     int iVar = -1;
-    for ( j = 0; j < p->nObjs; j++ )
+    for ( j = 0; ( j < p->nObjs ) && ( j < MAJ_NOBJS ); j++ )
     {
         if ( p->VarMarks[i][k][j] && sat_solver_var_value( p->pSat, p->VarMarks[i][k][j] ) )
         {
@@ -298,6 +298,13 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     int i;
     int k;
     int iVar;
+
+    if ( ( p->nVars <= 0 ) || ( p->nObjs <= 0 ) || ( p->nNodes <= 0 ) )
+    {
+        printf( "Error: nVars out of valid range.\n" );
+        return;
+    }
+
     printf( "Realization of given %d-input function using %d two-input gates complementary=%d:\n", p->nVars, p->nNodes, fCompl );
     //    for ( i = p->nVars + 2; i < p->nObjs; i++ )
     for ( i = p->nObjs - 1; i >= p->nVars; i-- )
@@ -795,7 +802,7 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
     int fCompl = 0;
     word pTruth[16];
 
-    if ( ( pPars->nVars < 0 ) || ( pPars->nVars > CONST_TEN ) )
+    if ( ( pPars->nVars <= 0 ) || ( pPars->nVars > CONST_TEN ) )
     {
         printf( "Error: nVars out of valid range.\n" );
         return;
