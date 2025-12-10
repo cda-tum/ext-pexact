@@ -285,6 +285,129 @@ static int PexaManGetAct( PexaMan_t * p )
     return sumAct;
 }
 /*
+ * @brief Prints gate connectivity.
+ *
+ * @details Extracting information from solution and calculating overall gate connectivity.
+ *
+ * @param p: Pexact struct.
+ * @param i: Gate iteration variable.
+ * @param fCompl: Inverted output.
+ *
+ */
+static void PexaPrintGate( PexaMan_t * p, int i, int fCompl )
+{
+    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+    const int val1 = sat_solver_var_value( p->pSat, iVarStart );
+    const int val2 = sat_solver_var_value( p->pSat, iVarStart + 1 );
+    const int val3 = sat_solver_var_value( p->pSat, iVarStart + 2 );
+
+    if ( i == p->nObjs - 1 && fCompl )
+        printf( "%02d = 4'b%d%d%d1(", i, ( val3 == 0 ), ( val2 == 0 ), ( val1 == 0 ) );
+    else
+        printf( "%02d = 4'b%d%d%d0(", i, val3, val2, val1 );
+
+    for ( int k = 1; k >= 0; k-- )
+    {
+        int iVar = PexaManFindFanin( p, i, k );
+        if ( iVar >= 0 && iVar < p->nVars )
+            printf( " %c", 'a' + iVar );
+        else
+            printf( " %02d", iVar );
+    }
+    printf( " )\n" );
+}
+/*
+ * @brief Calculates truth tables.
+ *
+ * @details Extracting information from solution and calculating overall truth tables.
+ *
+ * @param p: Pexact struct.
+ * @param xIt: Truth table array
+ *
+ */
+static void PexaBuildTruthTables( PexaMan_t * p, int * xIt )
+{
+    const int nTruth = 1 << p->nVars;
+
+    // Primäre Eingänge
+    for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
+        for ( int t = 0; t < nTruth; t++ )
+            xIt[i * nTruth + t] = ValueNthBit( t, i );
+
+    // Innere Nodes
+    const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
+
+    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
+    {
+        xIt[i * nTruth] = 0;
+
+        for ( int t = 1; t < nTruth; t++ )
+        {
+            const int vid = xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) );
+            xIt[i * nTruth + t] = sat_solver_var_value( p->pSat, vid );
+        }
+    }
+}
+/*
+ * @brief Printing truth tables.
+ *
+ * @details Extracting information from solution and calculating Printing truth table.
+ *
+ * @param p: Pexact struct.
+ * @param xIt: Truth table array
+ *
+ */
+static void PexaPrintTruthTables( PexaMan_t * p, int * xIt )
+{
+    const int nTruth = 1 << p->nVars;
+
+    for ( int i = 0; i < p->nObjs - 1; i++ )
+    {
+        printf( "i=%d:", i );
+        for ( int t = 0; t < nTruth; t++ )
+            printf( "%d", xIt[i * nTruth + t] );
+        printf( "\n" );
+    }
+}
+
+/*
+ * @brief Printing truth tables of resulting gate.
+ *
+ * @details Extracting information from solution and calculating resulting gate.
+ *
+ * @param p: Pexact struct.
+ * @param xIt: Truth table array
+ * @param fCompl: Inverted output.
+ *
+ */
+static void PexaPrintResultNode( PexaMan_t * p, int * xIt, int fCompl )
+{
+    const int nTruth = 1 << p->nVars;
+
+    const int i = p->nObjs - 1;
+    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+
+    int fOut[4];
+    fOut[0] = fCompl;
+    fOut[1] = fCompl ? ( sat_solver_var_value( p->pSat, iVarStart ) == 0 )
+                     : sat_solver_var_value( p->pSat, iVarStart );
+    fOut[2] = fCompl ? ( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 )
+                     : sat_solver_var_value( p->pSat, iVarStart + 1 );
+    fOut[3] = fCompl ? ( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 )
+                     : sat_solver_var_value( p->pSat, iVarStart + 2 );
+
+    int i0 = PexaManFindFanin( p, i, 0 );
+    int i1 = PexaManFindFanin( p, i, 1 );
+
+    printf( "i=%d:", i );
+    for ( int t = 0; t < nTruth; t++ )
+    {
+        int index = ( xIt[i1 * nTruth + t] << 1 ) | xIt[i0 * nTruth + t];
+        printf( "%d", fOut[index] );
+    }
+    printf( "\n\n" );
+}
+/*
  * @brief Printing solution of SAT solver.
  *
  * @details Extracting information from solution and printing connectivity and truth tables.
@@ -295,87 +418,30 @@ static int PexaManGetAct( PexaMan_t * p )
  */
 static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
 {
-    int i;
-    int k;
-    int iVar;
+    printf( "Realization of given %d-input function using %d two-input gates complementary=%d:\n",
+            p->nVars, p->nNodes, fCompl );
 
-    printf( "Realization of given %d-input function using %d two-input gates complementary=%d:\n", p->nVars, p->nNodes, fCompl );
-    for ( i = p->nObjs - 1; i >= p->nVars; i-- )
-    {
-        const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
-        const int val1 = sat_solver_var_value( p->pSat, iVarStart );
-        const int val2 = sat_solver_var_value( p->pSat, iVarStart + 1 );
-        const int val3 = sat_solver_var_value( p->pSat, iVarStart + 2 );
-        if ( i == p->nObjs - 1 && fCompl )
-        {
-            printf( "%02d = 4\'b%d%d%d1(", i, static_cast<int>( val3 == 0 ), static_cast<int>( val2 == 0 ), static_cast<int>( val1 == 0 ) );
-        } else
-        {
-            printf( "%02d = 4\'b%d%d%d0(", i, val3, val2, val1 );
-        }
+    // 1. Print gates
+    for ( int i = p->nObjs - 1; i >= p->nVars; i-- )
+        PexaPrintGate( p, i, fCompl );
 
-        for ( k = 1; k >= 0; k-- )
-        {
-            iVar = PexaManFindFanin( p, i, k );
-            if ( iVar >= 0 && iVar < p->nVars )
-            {
-                printf( " %c", 'a' + iVar );
-            } else
-            {
-                printf( " %02d", iVar );
-            }
-        }
-        printf( " )\n" );
-    }
     printf( "Printing overall Truth Table...\n" );
-    const int nTruth = pow( 2, p->nVars );
-    const int len = ( p->nObjs ) * nTruth;
-    int xIt[len];
-    const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
 
-    for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
-    {
-        for ( int t = 0; t < nTruth; t++ )
-        {
-            const int index = ( i * nTruth ) + t;
-            xIt[index] = ValueNthBit( t, i );
-        }
-    }
-    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
-    {
-        xIt[i * nTruth] = 0;
-        for ( int t = 1; t < nTruth; t++ )
-        {
-            const int index = ( i * nTruth ) + t;
-            xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
-        }
-    }
-    for ( int i = 0; i < p->nObjs - 1; i++ )
-    {
-        printf( "i=%d:", i );
-        for ( int t = 0; t < nTruth; t++ )
-        {
-            const int index = ( i * nTruth ) + t;
-            printf( "%d", xIt[index] );
-        }
-        printf( "\n" );
-    }
-    const int iVarStart = 1 + ( CONST_THREE * ( p->nObjs - 1 - p->nVars ) );
-    int fOut[CONST_FOUR];
-    fOut[CONST_ZERO] = fCompl;
-    fOut[CONST_ONE] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) == 0 ) : ( sat_solver_var_value( p->pSat, iVarStart ) );
-    fOut[CONST_TWO] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 ) : ( sat_solver_var_value( p->pSat, iVarStart + 1 ) );
-    fOut[CONST_THREE] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 ) : ( sat_solver_var_value( p->pSat, iVarStart + 2 ) );
-    const int i0 = PexaManFindFanin( p, p->nObjs - 1, 0 );
-    const int i1 = PexaManFindFanin( p, p->nObjs - 1, 1 );
-    printf( "i=%d:", p->nObjs - 1 );
-    for ( int t = 0; t < nTruth; t++ )
-    {
-        const int index = ( xIt[( i1 * nTruth ) + t] << 1 ) + ( xIt[( i0 * nTruth ) + t] );
-        printf( "%d", fOut[index] );
-    }
-    printf( "\n" );
-    printf( "\n" );
+    // 2. Allocate TT storage
+    const int nTruth = 1 << p->nVars;
+    int * xIt = new int[p->nObjs * nTruth];
+
+    // 3. Build truth tables
+    PexaBuildTruthTables( p, xIt );
+
+    // 4. Print each TT
+    PexaPrintTruthTables( p, xIt );
+
+    // 5. Print output TT
+    PexaPrintResultNode( p, xIt, fCompl );
+
+    delete[] xIt;
+
     printf( "Switching Activity=%d\n", PexaManGetAct( p ) );
     printf( "Number of Gates: r=%d\n", p->nNodes );
 }
