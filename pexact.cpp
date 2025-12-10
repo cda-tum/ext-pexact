@@ -252,7 +252,7 @@ static int PexaManGetAct( PexaMan_t * p )
     const int len = ( p->nObjs ) * mulPot;
     int xIt[len];
     const int xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
-    for ( int i = p->nVars; i < p->nVars + p->nNodes - 1; i++ )
+    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
     {
         const int index = i * mulPot;
         xIt[index] = 0;
@@ -298,12 +298,6 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     int i;
     int k;
     int iVar;
-
-    if ( ( p->nVars <= 0 ) || ( p->nObjs <= 0 ) || ( p->nNodes <= 0 ) )
-    {
-        printf( "Error: nVars out of valid range.\n" );
-        return;
-    }
 
     printf( "Realization of given %d-input function using %d two-input gates complementary=%d:\n", p->nVars, p->nNodes, fCompl );
     //    for ( i = p->nVars + 2; i < p->nObjs; i++ )
