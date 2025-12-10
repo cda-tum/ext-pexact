@@ -791,27 +791,28 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
 {
     int status;
     int iMint = 1;
-    PexaMan_t * p;
     int fCompl = 0;
     word pTruth[16];
-    Abc_TtReadHex( pTruth, pPars->pTtStr );
+
     assert( pPars->nVars <= CONST_TEN );
-    p = PexaManAlloc( pPars, pTruth );
+    Abc_TtReadHex( pTruth, pPars->pTtStr );
+    const int nWords = Abc_TtWordNum( pPars->nVars );
     if ( pTruth[0] & 1 )
     {
         fCompl = 1;
-        Abc_TtNot( pTruth, p->nWords );
+        Abc_TtNot( pTruth, nWords );
     }
-    int r = 0;
+
     const int maxNodes = 100;
-    while ( r < maxNodes )
+    for ( int r = 0; r < maxNodes; r++ )
     {
-        PexaManFree( p );
         pPars->nNodes = r + 1;
-        p = PexaManAlloc( pPars, pTruth );
+        PexaMan_t * p = PexaManAlloc( pPars, pTruth );
+
         status = PexaManAddCnfStart( p, pPars->fOnlyAnd );
         assert( status );
-        for ( iMint = 1; iMint < pow( 2, p->nVars ); iMint++ )
+
+        for ( iMint = 1; iMint < ( 1 << p->nVars ); iMint++ )
         {
             if ( !PexaManAddCnf( p, iMint ) )
             {
@@ -819,18 +820,17 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
                 break;
             }
         }
+
         status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
         if ( status == 1 )
         {
             PexaManPrintSolution( p, fCompl );
             PexaManFree( p );
-            break;
+            return;  // first (minimal) solution found
         }
-        r++;
-    }
-    if ( r >= maxNodes )
-    {
-        printf( "No solution found within %d gates.\n", maxNodes );
+
         PexaManFree( p );
     }
+
+    printf( "No solution found within %d gates.\n", maxNodes );
 }
