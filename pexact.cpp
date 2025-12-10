@@ -361,7 +361,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     int iVar;
 
     printf( "Realization of given %d-input function using %d two-input gates complementary=%d:\n", p->nVars, p->nNodes, fCompl );
-    for ( i = p->nObjs - 1; i >= p->nVars; i-- )
+    for ( i = p->nObjs - 1; ( i >= p->nVars ) && ( i < MAJ_NOBJS ); i-- )
     {
         const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
         const int val1 = sat_solver_var_value( p->pSat, iVarStart );
