@@ -795,7 +795,12 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
     int fCompl = 0;
     word pTruth[16];
 
-    assert( pPars->nVars <= CONST_TEN );
+    if ( ( pPars->nVars < 0 ) || ( pPars->nVars > CONST_TEN ) )
+    {
+        printf( "Error: nVars out of valid range.\n" );
+        return;
+    }
+
     Abc_TtReadHex( pTruth, pPars->pTtStr );
     const int nWords = Abc_TtWordNum( pPars->nVars );
     if ( pTruth[0] & 1 )
