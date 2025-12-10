@@ -248,7 +248,7 @@ static int ValueNthBit( int value, int n )
  */
 static int PexaManGetAct( PexaMan_t * p )
 {
-    const int mulPot = ( pow( 2, p->nVars ) );
+    const int mulPot = 1 << p->nVars;
     const int len = ( p->nObjs ) * mulPot;
     int xIt[len];
     const int xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
@@ -256,7 +256,7 @@ static int PexaManGetAct( PexaMan_t * p )
     {
         const int index = i * mulPot;
         xIt[index] = 0;
-        for ( int t = 1; t < pow( 2, p->nVars ); t++ )
+        for ( int t = 1; t < mulPot; t++ )
         {
             const int index = ( i * mulPot ) + t;
             xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
@@ -268,7 +268,7 @@ static int PexaManGetAct( PexaMan_t * p )
         int sum0 = 0;
         int sum1 = 0;
         int minSum = 0;
-        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+        for ( int t = 0; t < mulPot; t++ )
         {
             const int index = ( i * mulPot ) + t;
             if ( xIt[index] == 1 )
@@ -280,7 +280,7 @@ static int PexaManGetAct( PexaMan_t * p )
             }
         }
         minSum = sum1 <= sum0 ? sum1 : sum0;
-        sumAct += 2 * minSum * ( pow( 2, p->nVars ) - minSum );
+        sumAct += 2 * minSum * ( mulPot - minSum );
     }
     return sumAct;
 }
@@ -328,35 +328,36 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         printf( " )\n" );
     }
     printf( "Printing overall Truth Table...\n" );
-    const int len = ( p->nObjs ) * ( pow( 2, p->nVars ) );
+    const int nTruth = 1 << p->nVars;
+    const int len = ( p->nObjs ) * nTruth;
     int xIt[len];
     const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
 
     for ( int i = 0; i < p->nVars; i++ )
     {
-        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+        for ( int t = 0; t < nTruth; t++ )
         {
-            const int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
+            const int index = ( i * nTruth ) + t;
             xIt[index] = ValueNthBit( t, i );
         }
     }
 
     for ( int i = p->nVars; i < p->nVars + p->nNodes - 1; i++ )
     {
-        const int index = i * ( pow( 2, p->nVars ) );
+        const int index = i * nTruth;
         xIt[index] = 0;
-        for ( int t = 1; t < pow( 2, p->nVars ); t++ )
+        for ( int t = 1; t < nTruth; t++ )
         {
-            const int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
+            const int index = ( i * nTruth ) + t;
             xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
         }
     }
     for ( int i = 0; i < p->nObjs - 1; i++ )
     {
         printf( "i=%d:", i );
-        for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+        for ( int t = 0; t < nTruth; t++ )
         {
-            const int index = ( i * ( pow( 2, p->nVars ) ) ) + t;
+            const int index = ( i * nTruth ) + t;
             printf( "%d", xIt[index] );
         }
         printf( "\n" );
@@ -370,10 +371,10 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     const int i0 = PexaManFindFanin( p, p->nObjs - 1, 0 );
     const int i1 = PexaManFindFanin( p, p->nObjs - 1, 1 );
     printf( "i=%d:", p->nObjs - 1 );
-    for ( int t = 0; t < pow( 2, p->nVars ); t++ )
+    for ( int t = 0; t < nTruth; t++ )
     {
-        const int index0 = ( i0 * ( pow( 2, p->nVars ) ) ) + t;
-        const int index1 = ( i1 * ( pow( 2, p->nVars ) ) ) + t;
+        const int index0 = ( i0 * nTruth ) + t;
+        const int index1 = ( i1 * nTruth ) + t;
         const int index = ( xIt[index1] << 1 ) + ( xIt[index0] );
         printf( "%d", fOut[index] );
     }
@@ -811,8 +812,8 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
 
         status = PexaManAddCnfStart( p, pPars->fOnlyAnd );
         assert( status );
-
-        for ( iMint = 1; iMint < pow( 2, p->nVars ); iMint++ )
+        const int nTruth = 1 << p->nVars;
+        for ( iMint = 1; iMint < nTruth; iMint++ )
         {
             if ( !PexaManAddCnf( p, iMint ) )
             {
