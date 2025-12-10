@@ -248,7 +248,7 @@ static int ValueNthBit( int value, int n )
  */
 static int PexaManGetAct( PexaMan_t * p )
 {
-    const int mulPot = 1 << p->nVars;
+    const int mulPot = pow( 2, p->nVars );
     const int len = ( p->nObjs ) * mulPot;
     int xIt[len];
     const int xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
@@ -302,17 +302,22 @@ static void PexaPrintGate( PexaMan_t * p, int i, int fCompl )
     const int val3 = sat_solver_var_value( p->pSat, iVarStart + 2 );
 
     if ( i == p->nObjs - 1 && fCompl )
+    {
         printf( "%02d = 4'b%d%d%d1(", i, ( val3 == 0 ), ( val2 == 0 ), ( val1 == 0 ) );
-    else
+    } else
+    {
         printf( "%02d = 4'b%d%d%d0(", i, val3, val2, val1 );
-
+    }
     for ( int k = 1; k >= 0; k-- )
     {
         int iVar = PexaManFindFanin( p, i, k );
         if ( iVar >= 0 && iVar < p->nVars )
+        {
             printf( " %c", 'a' + iVar );
-        else
+        } else
+        {
             printf( " %02d", iVar );
+        }
     }
     printf( " )\n" );
 }
@@ -332,7 +337,9 @@ static void PexaBuildTruthTables( PexaMan_t * p, int * xIt )
     // Primäre Eingänge
     for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
         for ( int t = 0; t < nTruth; t++ )
+        {
             xIt[i * nTruth + t] = ValueNthBit( t, i );
+        }
 
     // Innere Nodes
     const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
@@ -365,7 +372,9 @@ static void PexaPrintTruthTables( PexaMan_t * p, int * xIt )
     {
         printf( "i=%d:", i );
         for ( int t = 0; t < nTruth; t++ )
+        {
             printf( "%d", xIt[i * nTruth + t] );
+        }
         printf( "\n" );
     }
 }
@@ -389,12 +398,12 @@ static void PexaPrintResultNode( PexaMan_t * p, int * xIt, int fCompl )
 
     int fOut[4];
     fOut[0] = fCompl;
-    fOut[1] = fCompl ? ( sat_solver_var_value( p->pSat, iVarStart ) == 0 )
-                     : sat_solver_var_value( p->pSat, iVarStart );
-    fOut[2] = fCompl ? ( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 )
-                     : sat_solver_var_value( p->pSat, iVarStart + 1 );
-    fOut[3] = fCompl ? ( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 )
-                     : sat_solver_var_value( p->pSat, iVarStart + 2 );
+    fOut[1] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) == 0 )
+                     : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) );
+    fOut[2] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 )
+                     : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) );
+    fOut[3] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 )
+                     : static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) );
 
     int i0 = PexaManFindFanin( p, i, 0 );
     int i1 = PexaManFindFanin( p, i, 1 );
@@ -423,7 +432,9 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
 
     // 1. Print gates
     for ( int i = p->nObjs - 1; i >= p->nVars; i-- )
+    {
         PexaPrintGate( p, i, fCompl );
+    }
 
     printf( "Printing overall Truth Table...\n" );
 
