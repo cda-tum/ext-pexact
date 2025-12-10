@@ -335,7 +335,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         printf( " )\n" );
     }
     printf( "Printing overall Truth Table...\n" );
-    const int nTruth = 1 << p->nVars;
+    const int nTruth = pow( 2, p->nVars );
     const int len = ( p->nObjs ) * nTruth;
     int xIt[len];
     const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
@@ -345,10 +345,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         for ( int t = 0; t < nTruth; t++ )
         {
             const int index = ( i * nTruth ) + t;
-            if ( index < len )
-            {
-                xIt[index] = ValueNthBit( t, i );
-            }
+            xIt[index] = ValueNthBit( t, i );
         }
     }
 
@@ -359,10 +356,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         for ( int t = 1; t < nTruth; t++ )
         {
             const int index = ( i * nTruth ) + t;
-            if ( index < len )
-            {
-                xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
-            }
+            xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
         }
     }
     for ( int i = 0; i < p->nObjs - 1; i++ )
@@ -371,10 +365,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         for ( int t = 0; t < nTruth; t++ )
         {
             const int index = ( i * nTruth ) + t;
-            if ( index < len )
-            {
-                printf( "%d", xIt[index] );
-            }
+            printf( "%d", xIt[index] );
         }
         printf( "\n" );
     }
