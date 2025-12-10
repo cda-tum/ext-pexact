@@ -345,7 +345,10 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         for ( int t = 0; t < nTruth; t++ )
         {
             const int index = ( i * nTruth ) + t;
-            xIt[index] = ValueNthBit( t, i );
+            if ( index < len )
+            {
+                xIt[index] = ValueNthBit( t, i );
+            }
         }
     }
 
@@ -356,7 +359,10 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         for ( int t = 1; t < nTruth; t++ )
         {
             const int index = ( i * nTruth ) + t;
-            xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
+            if ( index < len )
+            {
+                xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
+            }
         }
     }
     for ( int i = 0; i < p->nObjs - 1; i++ )
@@ -365,7 +371,10 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         for ( int t = 0; t < nTruth; t++ )
         {
             const int index = ( i * nTruth ) + t;
-            printf( "%d", xIt[index] );
+            if ( index < len )
+            {
+                printf( "%d", xIt[index] );
+            }
         }
         printf( "\n" );
     }
@@ -387,8 +396,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     }
     printf( "\n" );
     printf( "\n" );
-    const int sumAct = PexaManGetAct( p );
-    printf( "Switching Activity=%d\n", sumAct );
+    printf( "Switching Activity=%d\n", PexaManGetAct( p ) );
     printf( "Number of Gates: r=%d\n", p->nNodes );
 }
 /*
