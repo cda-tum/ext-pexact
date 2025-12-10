@@ -220,7 +220,7 @@ static inline int PexaManEval( PexaMan_t * p )
         iMint = Abc_TtFindFirstDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
     }
     //flag ^= 1;
-    assert( iMint < ( 1 << p->nVars ) );
+    assert( iMint < ( pow( 2, p->nVars ) ) );
     return iMint;
 }
 /*
@@ -295,6 +295,11 @@ static int PexaManGetAct( PexaMan_t * p )
  */
 static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl )
 {
+    if ( p->nObjs >= MAJ_NOBJS )
+    {
+        printf( "Error: nObjs out of valid range.\n" );
+        return;
+    }
     printf( "Printing overall Truth Table...\n" );
     const int nTruth = pow( 2, p->nVars );
     const int len = ( p->nObjs ) * nTruth;
