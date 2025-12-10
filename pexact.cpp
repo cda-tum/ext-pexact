@@ -340,7 +340,7 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     int xIt[len];
     const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
 
-    for ( int i = 0; i < p->nVars; i++ )
+    for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
     {
         for ( int t = 0; t < nTruth; t++ )
         {
@@ -349,10 +349,9 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
         }
     }
 
-    for ( int i = p->nVars; i < p->nVars + p->nNodes - 1; i++ )
+    for ( int i = p->nVars; i < p->nObjs - 1; i++ )
     {
-        const int index = i * nTruth;
-        xIt[index] = 0;
+        xIt[i * nTruth] = 0;
         for ( int t = 1; t < nTruth; t++ )
         {
             const int index = ( i * nTruth ) + t;
