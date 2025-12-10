@@ -233,7 +233,7 @@ static inline int PexaManEval( PexaMan_t * p )
  *
  * @return  Returns either 0 or 1.
  */
-const int ValueNthBit( int value, int n )
+static int ValueNthBit( int value, int n )
 {
     return ( value >> n ) & 1;
 }
@@ -364,9 +364,9 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl )
     const int iVarStart = 1 + ( CONST_THREE * ( p->nObjs - 1 - p->nVars ) );
     int fOut[CONST_FOUR];
     fOut[CONST_ZERO] = fCompl;
-    fOut[CONST_ONE] = fCompl ? static_cast<bool>( sat_solver_var_value( p->pSat, iVarStart ) == 0 ) : sat_solver_var_value( p->pSat, iVarStart );
-    fOut[CONST_TWO] = fCompl ? static_cast<bool>( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 ) : sat_solver_var_value( p->pSat, iVarStart + 1 );
-    fOut[CONST_THREE] = fCompl ? static_cast<bool>( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 ) : sat_solver_var_value( p->pSat, iVarStart + 2 );
+    fOut[CONST_ONE] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart ) == 0 ) : ( sat_solver_var_value( p->pSat, iVarStart ) );
+    fOut[CONST_TWO] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 1 ) == 0 ) : ( sat_solver_var_value( p->pSat, iVarStart + 1 ) );
+    fOut[CONST_THREE] = fCompl ? static_cast<int>( sat_solver_var_value( p->pSat, iVarStart + 2 ) == 0 ) : ( sat_solver_var_value( p->pSat, iVarStart + 2 ) );
     const int i0 = PexaManFindFanin( p, p->nObjs - 1, 0 );
     const int i1 = PexaManFindFanin( p, p->nObjs - 1, 1 );
     printf( "i=%d:", p->nObjs - 1 );
@@ -812,7 +812,7 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         status = PexaManAddCnfStart( p, pPars->fOnlyAnd );
         assert( status );
 
-        for ( iMint = 1; iMint < ( 1 << p->nVars ); iMint++ )
+        for ( iMint = 1; iMint < pow( 2, p->nVars ); iMint++ )
         {
             if ( !PexaManAddCnf( p, iMint ) )
             {
