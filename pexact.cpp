@@ -204,7 +204,7 @@ static inline int PexaManEval( PexaMan_t * p )
         }
     }
     iMint = Abc_TtFindFirstDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
-    assert( p->nVars > 0 );
+    assert( ( p->nVars > 0 ) && ( p->nVars < CONST_TEN ) );
     assert( iMint < ( 1 << p->nVars ) );
     return iMint;
 }
