@@ -163,7 +163,10 @@ static void PexaManFree( PexaMan_t * p )
  */
 static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
 {
-    assert( ( i < MAJ_NOBJS ) && ( i > 0 ) && ( k < 2 ) && ( k >= 0 ) );
+    assert( i >= p->nVars && i < p->nObjs );
+    assert( i < MAJ_NOBJS );
+    assert( k == 0 || k == 1 );
+
 
     int j;
     int count = 0;
@@ -303,9 +306,10 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl )
         return;
     }
     printf( "Printing overall Truth Table...\n" );
-    const int nTruth = pow( 2, p->nVars );
+    assert( p->nVars > 0 );
+    const int nTruth = 1 << p->nVars;
     const int len = ( p->nObjs ) * nTruth;
-    int xIt[len];
+    int * xIt = new int[len];
     const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
 
     for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
@@ -349,6 +353,7 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl )
         const int index = ( xIt[( i1 * nTruth ) + t] << 1 ) + ( xIt[( i0 * nTruth ) + t] );
         printf( "%d", fOut[index] );
     }
+    delete[] xIt;
 }
 
 
@@ -812,9 +817,9 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
     int fCompl = 0;
     word pTruth[16];
 
-    if ( ( pPars->nVars <= 0 ) || ( pPars->nVars > CONST_TEN ) )
+    if ( ( pPars->nVars < 2 ) || ( pPars->nVars > CONST_TEN ) )
     {
-        printf( "Error: nVars out of valid range.\n" );
+        printf( "Error: nVars out of valid range (supported: 2..%d).\n", CONST_TEN );
         return;
     }
 
