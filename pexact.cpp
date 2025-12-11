@@ -163,6 +163,8 @@ static void PexaManFree( PexaMan_t * p )
  */
 static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
 {
+    assert( ( i < MAJ_NOBJS ) && ( i > 0 ) && ( k < 2 ) && ( k >= 0 ) );
+
     int j;
     int count = 0;
     int iVar = -1;
