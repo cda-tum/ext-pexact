@@ -9,6 +9,7 @@
 
 #include "base/main/main.h"
 #include "base/main/mainInt.h"
+#include "pexact.hpp"
 #include "sat/bmc/bmc.h"
 
 #include <iostream>
@@ -16,6 +17,7 @@
 namespace
 {
 const int DECIMAL_BASE = 10;
+
 
 int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
@@ -66,7 +68,8 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( -1, "Function should not have more than 4 inputs.\n" );
         return 1;
     }
-    std::cout << "Number of Inputs:" << pPars->nVars << "\n";
+    PowerExactSynthesisBase( pPars );
+
     return 1;
 usage:
     Abc_Print( -2, "usage: pexact [-I] <hex>\n" );
