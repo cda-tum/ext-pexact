@@ -180,7 +180,6 @@ static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
  */
 static inline int PexaManEval( PexaMan_t * p )
 {
-    const int flag = 0;
     int i;
     int k;
     int iMint;
@@ -244,8 +243,8 @@ static int PexaManGetAct( PexaMan_t * p )
         xIt[index] = 0;
         for ( int t = 1; t < mulPot; t++ )
         {
-            const int index = ( i * mulPot ) + t;
-            xIt[index] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
+            const int innerIndex = ( i * mulPot ) + t;
+            xIt[innerIndex] = sat_solver_var_value( p->pSat, xiBase + ( CONST_THREE * ( i - p->nVars + 1 ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) ) );
         }
     }
     int sumAct = 0;
@@ -815,7 +814,13 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         Abc_TtNot( pTruth, nWords );
     }
 
-    const int maxNodes = MAJ_NOBJS;
+
+    const int maxNodes = MAJ_NOBJS - pPars->nVars;
+    if ( maxNodes <= 0 )
+    {
+        printf( "Error: too many inputs (%d) for MAJ_NOBJS = %d.\n", pPars->nVars, MAJ_NOBJS );
+        return;
+    }
     for ( int r = 0; r < maxNodes; r++ )
     {
         pPars->nNodes = r + 1;
