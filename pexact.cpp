@@ -89,20 +89,6 @@ static int PexaManMarkup( PexaMan_t * p )
     }
     //printf( "The number of parameter variables = %d.\n", p->iVar );
     return p->iVar;
-    // printout
-    for ( i = p->nVars; i < p->nObjs; i++ )
-    {
-        printf( "Node %d\n", i );
-        for ( j = 0; j < p->nObjs; j++ )
-        {
-            for ( k = 0; k < 2; k++ )
-            {
-                printf( "%3d ", p->VarMarks[i][k][j] );
-            }
-            printf( "\n" );
-        }
-    }
-    return p->iVar;
 }
 /*
  * @brief Allocation pexact struct.
@@ -217,15 +203,8 @@ static inline int PexaManEval( PexaMan_t * p )
             Abc_TtOr( PexaManTruth( p, i ), PexaManTruth( p, i ), PexaManTruth( p, p->nObjs ), p->nWords );
         }
     }
-    if ( flag && p->nVars >= CONST_SIX )
-    {
-        iMint = Abc_TtFindLastDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
-    } else
-    {
-        iMint = Abc_TtFindFirstDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
-    }
-    //flag ^= 1;
-    assert( iMint < ( pow( 2, p->nVars ) ) );
+    iMint = Abc_TtFindFirstDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
+    assert( iMint < ( 1 << p->nVars ) );
     return iMint;
 }
 /*
@@ -253,9 +232,10 @@ static int ValueNthBit( int value, int n )
  */
 static int PexaManGetAct( PexaMan_t * p )
 {
+    assert( p->nVars > 0 );
     const int mulPot = 1 << p->nVars;
     const int len = ( p->nObjs ) * mulPot;
-    int xIt[len];
+    int * xIt = new int[len];
     const int xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
     for ( int i = p->nVars; i < p->nObjs - 1; i++ )
     {
@@ -287,6 +267,7 @@ static int PexaManGetAct( PexaMan_t * p )
         minSum = sum1 <= sum0 ? sum1 : sum0;
         sumAct += 2 * minSum * ( mulPot - minSum );
     }
+    delete[] xIt;
     return sumAct;
 }
 /*
@@ -507,9 +488,10 @@ static int AddCnfSymBreaking( PexaMan_t * p, int i, int k, int pList2[2] )
  *
  * @return  Returns 0 if error during encoding occurs.
  */
-static int AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int k, int pList[MAJ_NOBJS] )
+static int AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int pList[MAJ_NOBJS] )
 {
     const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+    int k = 0;
     // two input functions
     for ( k = 0; k < CONST_THREE; k++ )
     {
@@ -543,9 +525,10 @@ static int AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int k, int pL
  *
  * @return  Returns 0 if error during encoding occurs.
  */
-static int AddCnfStartOutUsed( PexaMan_t * p, int i )
+static int AddCnfStartOutUsed( PexaMan_t * p )
 {
     // outputs should be used
+    int i = 0;
     for ( i = 0; i < p->nObjs - 1; i++ )
     {
         Vec_Int_t * vArray = Vec_WecEntry( p->vOutList, i );
@@ -605,7 +588,7 @@ static int AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pLi
             return 0;
         }
 
-        if ( AddCnfTwoInputFunc( p, fOnlyAnd, i, k, pList ) == 0 )
+        if ( AddCnfTwoInputFunc( p, fOnlyAnd, i, pList ) == 0 )
         {
             return 0;
         }
@@ -636,7 +619,7 @@ static int PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
         }
     }
     // outputs should be used
-    if ( AddCnfStartOutUsed( p, i ) == 0 )
+    if ( AddCnfStartOutUsed( p ) == 0 )
     {
         return 0;
     }
@@ -831,7 +814,7 @@ void PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         Abc_TtNot( pTruth, nWords );
     }
 
-    const int maxNodes = 100;
+    const int maxNodes = MAJ_NOBJS;
     for ( int r = 0; r < maxNodes; r++ )
     {
         pPars->nNodes = r + 1;
