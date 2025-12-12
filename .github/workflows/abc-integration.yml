@@ -40,13 +40,13 @@ jobs:
           brew install bison flex
 
       - name: Checkout ABC
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: berkeley-abc/abc
           path: abc
 
       - name: Checkout ext-pexact plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: abc/src/ext-pexact
 

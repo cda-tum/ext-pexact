@@ -28,13 +28,13 @@ jobs:
           sudo apt-get install -y build-essential cmake libreadline-dev
 
       - name: Checkout ABC
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: berkeley-abc/abc
           path: abc
 
       - name: Checkout ext-pexact plugin
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: abc/src/ext-pexact
 
