@@ -675,6 +675,48 @@ static bool AddCnfFaninCon( PexaMan_t * p, int i )
     return 1;
 }
 /**
+ * @brief Adding fanin Node functionality helper.
+ *
+ * @details Helper function for AddCnfNodeFunc functionality constraints.
+ *
+ * @param p Pexact struct.
+ * @param i Minterm iteration variable.
+ * @param n Gate iteration variable.
+ *
+ * @return  Returns 0 if error during encoding occurs.
+ */
+static bool AddCnfNodeFuncInner( PexaMan_t * p, int i, int n )
+{
+    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
+    const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
+    int k = 0;
+    for ( k = 0; k < 4; k++ )
+    {
+        int pList[4];
+        int nList = 0;
+        if ( k == 0 && n == 1 )
+        {
+            continue;
+        }
+        pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 0, ( k & 1 ) );
+        pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 1, ( k >> 1 ) );
+        if ( i != p->nObjs - 1 )
+        {
+            pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 2, ( n == 0 ) );
+        }
+        if ( k > 0 )
+        {
+            pList[nList++] = Abc_Var2Lit( iVarStart + k - 1, n );
+        }
+        assert( nList <= 4 );
+        if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+/**
  * @brief Adding fanin Node functionality constraints.
  *
  * @details Constraining which output value a gate i has depending on the functionality variables(AND,OR,XOR).
@@ -687,40 +729,17 @@ static bool AddCnfFaninCon( PexaMan_t * p, int i )
  */
 static bool AddCnfNodeFunc( PexaMan_t * p, int iMint, int i )
 {
-    int k = 0;
     int n = 0;
     const int value = Abc_TtGetBit( p->pTruth, iMint );
-    const int iVarStart = 1 + ( CONST_THREE * ( i - p->nVars ) );
-    const int iBaseSatVarI = p->iVar + ( CONST_THREE * ( i - p->nVars ) );
     for ( n = 0; n < 2; n++ )
     {
         if ( i == p->nObjs - 1 && n == value )
         {
             continue;
         }
-        for ( k = 0; k < 4; k++ )
+        if ( AddCnfNodeFuncInner( p, i, n ) == 0 )
         {
-            int pList[4];
-            int nList = 0;
-            if ( k == 0 && n == 1 )
-            {
-                continue;
-            }
-            pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 0, ( k & 1 ) );
-            pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 1, ( k >> 1 ) );
-            if ( i != p->nObjs - 1 )
-            {
-                pList[nList++] = Abc_Var2Lit( iBaseSatVarI + 2, ( n == 0 ) );
-            }
-            if ( k > 0 )
-            {
-                pList[nList++] = Abc_Var2Lit( iVarStart + k - 1, n );
-            }
-            assert( nList <= 4 );
-            if ( !sat_solver_addclause( p->pSat, pList, pList + nList ) )
-            {
-                return 0;
-            }
+            return 0;
         }
     }
     return 1;
