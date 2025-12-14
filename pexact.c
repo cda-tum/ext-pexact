@@ -846,11 +846,11 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
             if ( !PexaManAddCnf( p, iMint ) )
             {
                 printf( "Error: CNF encoding failed for minterm %d.\n", iMint );
-                encoding_failed = true;
+                encodingFailed = true;
                 break;
             }
         }
-        if ( encoding_failed )
+        if ( encodingFailed )
         {
             PexaManFree( p );
             continue;
