@@ -224,7 +224,12 @@ static int PexaManGetAct( PexaMan_t * p )
     assert( p->nVars > 0 );
     const int mulPot = 1 << p->nVars;
     const int len = ( p->nObjs ) * mulPot;
-    int xIt[len];
+    int * xIt = ABC_ALLOC( int, len );
+    if ( !xIt )
+    {
+        printf( "Error: memory allocation failed.\n" );
+        return 0;
+    }
     const int xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
     for ( int i = p->nVars; i < p->nObjs - 1; i++ )
     {
@@ -256,6 +261,7 @@ static int PexaManGetAct( PexaMan_t * p )
         minSum = sum1 <= sum0 ? sum1 : sum0;
         sumAct += 2 * minSum * ( mulPot - minSum );
     }
+    ABC_FREE( xIt );
     return sumAct;
 }
 /**
@@ -277,7 +283,12 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl )
     assert( p->nVars > 0 );
     const int nTruth = 1 << p->nVars;
     const int len = ( p->nObjs ) * nTruth;
-    int xIt[len];
+    int * xIt = ABC_ALLOC( int, len );
+    if ( !xIt )
+    {
+        printf( "Error: memory allocation failed.\n" );
+        return;
+    }
     const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
 
     for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
@@ -321,6 +332,7 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl )
         const int index = ( xIt[( i1 * nTruth ) + t] << 1 ) + ( xIt[( i0 * nTruth ) + t] );
         printf( "%d", fOut[index] );
     }
+    ABC_FREE( xIt );
 }
 
 
@@ -828,13 +840,20 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         status = PexaManAddCnfStart( p, pPars->fOnlyAnd );
         assert( status );
         const int nTruth = 1 << p->nVars;
+        bool encoding_failed = false;
         for ( iMint = 1; iMint < nTruth; iMint++ )
         {
             if ( !PexaManAddCnf( p, iMint ) )
             {
-                printf( "The problem has no solution.\n" );
+                printf( "Error: CNF encoding failed for minterm %d.\n", iMint );
+                encoding_failed = true;
                 break;
             }
+        }
+        if ( encoding_failed )
+        {
+            PexaManFree( p );
+            continue;
         }
 
         status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
