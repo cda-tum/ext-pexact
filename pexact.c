@@ -840,7 +840,7 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         status = PexaManAddCnfStart( p, pPars->fOnlyAnd );
         assert( status );
         const int nTruth = 1 << p->nVars;
-        bool encoding_failed = false;
+        bool encodingFailed = false;
         for ( iMint = 1; iMint < nTruth; iMint++ )
         {
             if ( !PexaManAddCnf( p, iMint ) )
