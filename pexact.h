@@ -53,6 +53,7 @@ struct PexaMan_t_ {
     int nObjs;
     int nWords;
     int iVar;
+    int iVarMintermBase;
     word * pTruth;
     Vec_Wrd_t * vInfo;
     int VarMarks[MAJ_NOBJS][2][MAJ_NOBJS];

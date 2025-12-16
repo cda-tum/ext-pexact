@@ -99,6 +99,7 @@ static PexaMan_t * PexaManAlloc( Bmc_EsPar_t * pPars, word * pTruth )
     p->pTruth = pTruth;
     p->vOutList = Vec_WecStart( p->nObjs );
     p->iVar = PexaManMarkup( p );
+    p->iVarMintermBase = ( pPars->nNodes * ( 2 * pPars->nVars + pPars->nNodes - 1 ) ) - pPars->nNodes + ( CONST_THREE * pPars->nNodes );
     p->vInfo = PexaManTruthTables( p );
     p->pSat = sat_solver_new();
     sat_solver_setnvars( p->pSat, p->iVar );
@@ -225,7 +226,7 @@ static int PexaManGetAct( PexaMan_t * p )
         printf( "Error: memory allocation failed.\n" );
         return 0;
     }
-    const int xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
+    const int xiBase = p->iVarMintermBase;
     for ( int i = p->nVars; i < p->nObjs - 1; i++ )
     {
         const int index = i * mulPot;
@@ -284,7 +285,7 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl )
         printf( "Error: memory allocation failed.\n" );
         return;
     }
-    const int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
+    const int xiBase = p->iVarMintermBase;
 
     for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
     {
@@ -327,6 +328,7 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl )
         const int index = ( xIt[( i1 * nTruth ) + t] << 1 ) + ( xIt[( i0 * nTruth ) + t] );
         printf( "%d", fOut[index] );
     }
+    printf( "\n" );
     ABC_FREE( xIt );
 }
 
