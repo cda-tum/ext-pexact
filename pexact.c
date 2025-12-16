@@ -188,7 +188,13 @@ static inline int PexaManEval( PexaMan_t * p )
     assert( ( p->nVars > 0 ) && ( p->nVars <= CONST_TEN ) );
     assert( iMint < ( 1 << p->nVars ) );
     assert( iMint >= -1 );
-    return iMint;
+    if ( iMint == -1 )
+    {
+        return -1;
+    } else
+    {
+        return -1;
+    }
 }
 /**
  * @brief Evaluation n'th bit in value for binary representation.
@@ -834,7 +840,8 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         if ( !PexaManAddCnfStart( p, pPars->fOnlyAnd ) )
         {
             printf( "Error: CNF base encoding failed.\n" );
-            fEncodingFailed = true;
+            PexaManFree( p );
+            continue;  // try next gate count
         }
         const int nTruth = 1 << p->nVars;
         for ( iMint = 1; iMint < nTruth; iMint++ )
