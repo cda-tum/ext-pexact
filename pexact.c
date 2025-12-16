@@ -833,9 +833,8 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
         bool fEncodingFailed = false;
         if ( !PexaManAddCnfStart( p, pPars->fOnlyAnd ) )
         {
-            printf( "Error: CNF encoding failed for minterm %d.\n", iMint );
+            printf( "Error: CNF base encoding failed.\n" );
             fEncodingFailed = true;
-            break;
         }
         const int nTruth = 1 << p->nVars;
         for ( iMint = 1; iMint < nTruth; iMint++ )
