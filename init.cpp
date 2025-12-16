@@ -91,7 +91,7 @@ usage:
 /**
  * @brief Abc startup initialization.
  *
- * @details called during ABC startup
+ * @details Called during ABC startup.
  *
  * @param pAbc Abc frame.
  */
