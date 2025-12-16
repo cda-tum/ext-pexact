@@ -188,13 +188,8 @@ static inline int PexaManEval( PexaMan_t * p )
     assert( ( p->nVars > 0 ) && ( p->nVars <= CONST_TEN ) );
     assert( iMint < ( 1 << p->nVars ) );
     assert( iMint >= -1 );
-    if ( iMint == -1 )
-    {
-        return -1;
-    } else
-    {
-        return iMint;
-    }
+    // iMint==-1 -> truth table matches
+    return iMint;
 }
 /**
  * @brief Evaluation n'th bit in value for binary representation.
