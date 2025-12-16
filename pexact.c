@@ -193,7 +193,7 @@ static inline int PexaManEval( PexaMan_t * p )
         return -1;
     } else
     {
-        return -1;
+        return iMint;
     }
 }
 /**
