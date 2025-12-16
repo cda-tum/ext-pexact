@@ -69,14 +69,7 @@ static int PexaManMarkup( PexaMan_t * p )
     {
         for ( k = 0; k < 2; k++ )
         {
-            if ( p->pPars->fFewerVars && i == p->nObjs - 1 && k == 0 )
-            {
-                j = p->nObjs - 2;
-                Vec_WecPush( p->vOutList, j, Abc_Var2Lit( p->iVar, 0 ) );
-                p->VarMarks[i][k][j] = p->iVar++;
-                continue;
-            }
-            for ( j = p->pPars->fFewerVars ? 1 - k : 0; ( j < ( i - k ) ) && ( j < MAJ_NOBJS ) && ( j >= 0 ); j++ )
+            for ( j = 0; ( j < ( i - k ) ) && ( j < MAJ_NOBJS ) && ( j >= 0 ); j++ )
             {
                 Vec_WecPush( p->vOutList, j, Abc_Var2Lit( p->iVar, 0 ) );
                 p->VarMarks[i][k][j] = p->iVar++;
@@ -194,6 +187,7 @@ static inline int PexaManEval( PexaMan_t * p )
     iMint = Abc_TtFindFirstDiffBit( PexaManTruth( p, p->nObjs - 1 ), p->pTruth, p->nVars );
     assert( ( p->nVars > 0 ) && ( p->nVars <= CONST_TEN ) );
     assert( iMint < ( 1 << p->nVars ) );
+    assert( iMint >= -1 );
     return iMint;
 }
 /**
@@ -836,11 +830,14 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
     {
         pPars->nNodes = r + 1;
         PexaMan_t * p = PexaManAlloc( pPars, pTruth );
-
-        status = PexaManAddCnfStart( p, pPars->fOnlyAnd );
-        assert( status );
-        const int nTruth = 1 << p->nVars;
         bool fEncodingFailed = false;
+        if ( !PexaManAddCnfStart( p, pPars->fOnlyAnd ) )
+        {
+            printf( "Error: CNF encoding failed for minterm %d.\n", iMint );
+            fEncodingFailed = true;
+            break;
+        }
+        const int nTruth = 1 << p->nVars;
         for ( iMint = 1; iMint < nTruth; iMint++ )
         {
             if ( !PexaManAddCnf( p, iMint ) )
