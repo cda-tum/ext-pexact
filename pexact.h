@@ -23,8 +23,13 @@ const int CONST_ONE = 1;
 const int CONST_TWO = 2;
 const int CONST_THREE = 3;
 const int CONST_FOUR = 4;
+const int CONST_FIVE = 5;
 const int CONST_SIX = 6;
+const int CONST_SEVEN = 7;
 const int CONST_TEN = 10;
+
+const int CONST_NINETY_SIX = 96;
+const int CONST_FIFTY_SIX = 56;
 
 /**
  * @brief pexact struct.
@@ -52,6 +57,11 @@ struct PexaMan_t_ {
     int nNodes;
     int nObjs;
     int nWords;
+    int i_p;            //start of p variables
+    int i_o;            //start of o variables
+    int o_l;            // amount of o variables
+    int i_xo;           //start of output x variables
+    int i_mintermvars;  //start of minterm variables
     int iVar;
     int iVarMintermBase;
     word * pTruth;
@@ -62,6 +72,22 @@ struct PexaMan_t_ {
     sat_solver * pSat;
 };
 
+typedef struct Comb_t_ Comb_t;
+struct Comb_t_ {
+    int act;
+    int r;
+    int * combi;
+    Comb_t * next;
+};
+
+typedef struct CombList_t_ CombList_t;
+struct CombList_t_ {
+    Comb_t * start;
+    int len;
+    int length;
+};
+
 int PowerExactSynthesisBase( Bmc_EsPar_t * pPars );
+int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars, int verbose );
 
 #endif
