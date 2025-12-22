@@ -867,7 +867,16 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
     printf( "No solution found within %d gates.\n", maxNodes );
     return 1;
 }
-
+/**
+ * @brief Adding and sorting combination to priority list.
+ *
+ * @details adding combination to priority list sorted by activity and number of gates.
+ *
+ * @param act Switching activity.
+ * @param r Gate count.
+ * @param combi Combinational array.
+ * @param list Combination list.
+ */
 void AddCombi( int act, int r, const int * combi, CombList_t * list )
 {
     int len = list->len;
@@ -906,6 +915,18 @@ void AddCombi( int act, int r, const int * combi, CombList_t * list )
     }
     list->length++;
 }
+/**
+ * @brief Remove first element from combination list.
+ *
+ * @details removing first element from combination list.
+ *
+ * @param act Switching activity.
+ * @param r Gate count.
+ * @param combi Combinational array.
+ * @param list Combination list.
+ *
+ * @return  Returns pointer to removed combination.
+ */
 Comb_t * PopComb( CombList_t * list )
 {
     list->length--;
@@ -913,7 +934,15 @@ Comb_t * PopComb( CombList_t * list )
     list->start = list->start->next;
     return node;
 }
-
+/**
+ * @brief Remove combinations from list.
+ *
+ * @details Removing combinations from list until list is empty.
+ *
+ * @param list Combination list.
+ * @param r Gate count.
+ * @param combi Combinational array.
+ */
 void RemoveCombis( CombList_t * list, int r, const int * combi )
 {
     int l = 0;
@@ -924,14 +953,11 @@ void RemoveCombis( CombList_t * list, int r, const int * combi )
         Comb_t * ptrOld = list->start;
         while ( ptr->next != NULL )
         {
-            // printf("Loop Start\n");
             if ( ( ptr->r ) == r )
             {
                 int match = 0;
-                // printf("new ptr\n");
                 for ( int i = 0; i < list->len; i++ )
                 {
-                    // printf("comparing %d with %d\n",*(ptr->combi+i),*(combi+i));
                     if ( ( *( combi + i ) == -1 ) || ( *( ptr->combi + i ) == *( combi + i ) ) )
                     {
                         match++;
@@ -939,8 +965,6 @@ void RemoveCombis( CombList_t * list, int r, const int * combi )
                 }
                 if ( match == list->len )
                 {
-                    // printf("element:%d\n",l);
-                    // printf("removed\n");
                     if ( ptr == list->start )
                     {
                         l++;
@@ -952,7 +976,6 @@ void RemoveCombis( CombList_t * list, int r, const int * combi )
                         // ptr=list->start;
                     } else
                     {
-                        //printf("Removed ACT=%d r=%d p1=%d\n", ptr->act, ptr->r, *combi);
                         l++;
                         ptrOld->next = ptr->next;
                         ptr = ptrOld;
@@ -965,18 +988,21 @@ void RemoveCombis( CombList_t * list, int r, const int * combi )
             }
             ptrOld = ptr;
             ptr = ptr->next;
-            // printf("in list %d from %d\n",iptr,list->length);
             iptr++;
             if ( iptr == list->length - 1 )
             {
                 break;
             }
         }
-
-        //  printf("%d combis removed removing\n", l);
     }
 }
-
+/**
+ * @brief Deallocate combinational list.
+ *
+ * @details Deallocating all elements in the combination list.
+ *
+ * @param list Combination list.
+ */
 void FreeCombList( CombList_t * list )
 {
     while ( list->length > 0 )
@@ -986,7 +1012,16 @@ void FreeCombList( CombList_t * list )
         free( node );
     }
 }
-
+/**
+ * @brief Evaluating P variable values.
+ *
+ * @details Evaluating P variable values. Used for CEGAR flow.
+ *
+ * @param p Pexact struct..
+ * @param combi Combinational array.
+ *
+ * @return Returns -1 if combination matches solution, otherwise returns index of first mismatch.
+ */
 int PexaManEvalPVariablesBdd( PexaMan_t * p, const int * combi )
 {
     int np = pow( 2, p->nVars - 1 ) + 1;
@@ -1018,7 +1053,16 @@ int PexaManEvalPVariablesBdd( PexaMan_t * p, const int * combi )
     }
     return -1;
 }
-
+/**
+ * @brief Converting integer to base representation.
+ *
+ * @details Converting integer to base representation.
+ *
+ * @param base Base.
+ * @param value Integer value.
+ * @param size Size of the result array.
+ * @param results Result array.
+ */
 void ConvertBaseInt( int base, int value, int size, int * results )
 {
     int r;
@@ -1028,9 +1072,18 @@ void ConvertBaseInt( int base, int value, int size, int * results )
         results[i] = r;
         value = value / base;
     }
-    // return results;
 }
-
+/**
+ * @brief Adding mux encoding.
+ *
+ * @details Adds a multiplexer encoding to CNF SAT encoding.
+ *
+ * @param p Pexact struct.
+ * @param o Output variable.
+ * @param c Control variable.
+ * @param i1 high child.
+ * @param i0 low child.
+ */
 void AddMuxEncoding( PexaMan_t * p, int o, int c, int i1, int i0 )
 {
     int pList[CONST_THREE];
@@ -1051,7 +1104,13 @@ void AddMuxEncoding( PexaMan_t * p, int o, int c, int i1, int i0 )
     pList[CONST_TWO] = Abc_Var2Lit( o, 0 );
     sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
 }
-
+/**
+ * @brief Adding bdd P variable clauses.
+ *
+ * @details Adds the P variable clauses for BDD encoding to CNF encoding.
+ *
+ * @param p Pexact struct.
+ */
 void PexaManAddPClausesBdd( PexaMan_t * p )
 {
     //printf("adding P Clauses\n");
@@ -1169,7 +1228,16 @@ void PexaManAddPClausesBdd( PexaMan_t * p )
         }
     }
 }
-
+/**
+ * @brief Calculating maximum switching activity.
+ *
+ * @details Calculates the maximum switching activity for a given gate count and input size.
+ *
+ * @param r Gate count.
+ * @param k Primary input count.
+ *
+ * @return Returns maximum switching activity.
+ */
 int CalcMaxAct( int r, int k )
 {
     int ret = 0;
@@ -1183,7 +1251,15 @@ int CalcMaxAct( int r, int k )
     }
     return ret;
 }
-
+/**
+ * @brief Calculating combinational list for given r.
+ *
+ * @details Calculates all combinations of switching activities for a given gate count and input size.
+ *
+ * @param k Primary input count.
+ * @param r Gate count.
+ * @param list Combination list.
+ */
 void CalculateCombArray( int k, int r, CombList_t * list )
 {
     if ( r == 0 )
@@ -1234,6 +1310,15 @@ void CalculateCombArray( int k, int r, CombList_t * list )
         }
     }
 }
+/**
+ * @brief Cardinality constraints insertion.
+ *
+ * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
+ *
+ * @param p Pexact struct.
+ * @param combi combinational array.
+ * @param xp iteration variable of p variables.
+ */
 void PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
 {
     int ni = p->nNodes - 1;
@@ -1296,6 +1381,14 @@ void PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
         }
     }
 }
+/**
+ * @brief Printing Solution for bdd type encoding.
+ *
+ * @details Printing Solution for bdd type encoding, as variable indices differ from normal type encoding.
+ *
+ * @param p Pexact struct.
+ * @param fCompl complimemntary output.
+ */
 static void PexaManPrintSolutionBdd( PexaMan_t * p, int fCompl )
 {
     int i = 0;
@@ -1424,6 +1517,16 @@ static void PexaManPrintSolutionBdd( PexaMan_t * p, int fCompl )
     printf( "Switching Activity=%d\n", sumAct );
     printf( "Number of Gates: r=%d\n", p->nNodes );
 }
+/**
+ * @brief Counts amount of ones.
+ *
+ * @details Calculates one count of a given value in binary representation.
+ *
+ * @param value Decimal value.
+ * @param len Length of binary representation.
+ *
+ * @return Returns count of ones.
+ */
 int CountOne( int value, int len )
 {
     int ret1 = 0;
@@ -1436,7 +1539,13 @@ int CountOne( int value, int len )
     }
     return ret0 >= ret1 ? ret1 : ret0;
 }
-
+/**
+ * @brief Adds naive p variable encoding.
+ *
+ * @details Introduces naive p variable encoding to SAT CNF encoding.
+ *
+ * @param p Pexact struct.
+ */
 void PexaManAddPClauses( PexaMan_t * p )
 {
     //printf("adding P Clauses\n");
@@ -1518,7 +1627,15 @@ void PexaManAddPClauses( PexaMan_t * p )
         }
     }
 }
-
+/**
+ * @brief Adds carinality constraints.
+ *
+ * @details Introduces cardinality constraints for bdd type encoding for p variables to SAT CNF encoding.
+ *
+ * @param p Pexact struct.
+ * @param combi combinational array.
+ * @param xp iteration variable of p variables.
+ */
 void PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, int xp )
 {
     int ni = p->nNodes - 1;
@@ -1586,7 +1703,19 @@ void PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, int xp )
         // }
     }
 }
-
+/**
+ * @brief Running exact synthesis.
+ *
+ * @details Running exact synthesis. Calculating logic network with least amount of gates.
+ *          Iterating over gate count r. For each r checking if a solution exists. First solution
+ *          corresponds to minimum sized logic network. Adds p variable constraints and cardinality constraints to identyfy
+ *         switching activity optimal solution.
+ *
+ * @param pPars Input information from executed abc command.
+ * @param verbose Verbosity level (0: none, 1: time info, 2: detailed info).
+ *
+ * @return Returns 0 if synthesis was successful.
+ */
 int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars, int verbose )
 {
     int status = 0;

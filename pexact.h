@@ -71,7 +71,16 @@ struct PexaMan_t_ {
     Vec_Wec_t * vOutList;
     sat_solver * pSat;
 };
-
+/**
+ * @brief Combination element.
+ *
+ * @details Combination element storing combinations with their internal data.
+ *
+ * @param act Switching activity.
+ * @param r Number of nodes.
+ * @param combi Combination array.
+ * @param next Pointer to next combination element.
+ */
 typedef struct Comb_t_ Comb_t;
 struct Comb_t_ {
     int act;
@@ -79,7 +88,15 @@ struct Comb_t_ {
     int * combi;
     Comb_t * next;
 };
-
+/**
+ * @brief Combination priority list.
+ *
+ * @details Combination list storing certain combinations with their internal data.
+ *
+ * @param start Switching activity.
+ * @param len Number of stored combinations.
+ * @param length Current length of the list.
+ */
 typedef struct CombList_t_ CombList_t;
 struct CombList_t_ {
     Comb_t * start;
