@@ -900,12 +900,13 @@ bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * lis
     {
         *( node->combi + i ) = *( combi + i );
     }
-    Comb_t * ptr = list->start;
+
     if ( list->length == 0 )
     {
         list->start = node;
     } else
     {
+        Comb_t * ptr = list->start;
         if ( ( ptr->act > act ) || ( ( ptr->act == act ) && ( r < ptr->r ) ) )
         {
             list->start = node;
@@ -1102,7 +1103,7 @@ bool AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
     {
         pVars[p] = pStart + p;
     }
-    for ( int p = np; p < ( 2 * np ) - 2; p++ )
+    for ( int p = np; ( p < ( 2 * np ) - 2 ) && ( p >= 0 ); p++ )
     {
         pVars[p] = pStart + ( 2 * np ) - 2 - p;
     }
@@ -1550,6 +1551,10 @@ bool AddPClausesInner( PexaMan_t * p, int i )
     int xIt = 0;
     int pTarget = 0;
     sat_solver_setnvars( p->pSat, p->iVar );
+    for ( int p = 0; p < litsize; p++ )
+    {
+        pListP[p] = 0;
+    }
     for ( int p = 0; p < np; p++ )
     {
         pListP[p] = Abc_Var2Lit( pStartvar++, 0 );
