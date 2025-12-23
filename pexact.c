@@ -883,9 +883,14 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
  * @param combi Combinational array.
  * @param list Combination list.
  */
-void AddCombi( int act, int r, const int * combi, CombList_t * list )
+bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * list )
 {
     int len = list->len;
+    if ( len != combiLen )
+    {
+        printf( "Error: combination length mismatch.\n" );
+        return 0;
+    }
     Comb_t * node = ( Comb_t * )malloc( sizeof( Comb_t ) );
     node->act = act;
     node->r = r;
@@ -920,6 +925,7 @@ void AddCombi( int act, int r, const int * combi, CombList_t * list )
         }
     }
     list->length++;
+    return 1;
 }
 /**
  * @brief Remove first element from combination list.
@@ -1028,25 +1034,38 @@ void ConvertBaseInt( int base, int value, int size, int * results )
  * @param i1 high child.
  * @param i0 low child.
  */
-void AddMuxEncoding( PexaMan_t * p, int o, int c, int i1, int i0 )
+bool AddMuxEncoding( PexaMan_t * p, int o, int c, int i1, int i0 )
 {
     int pList[CONST_THREE];
     pList[CONST_ZERO] = Abc_Var2Lit( c, 1 );
     pList[CONST_ONE] = Abc_Var2Lit( o, 1 );
     pList[CONST_TWO] = Abc_Var2Lit( i1, 0 );
-    sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
+    if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
+        return 0;
+    }
     pList[CONST_ZERO] = Abc_Var2Lit( c, 1 );
     pList[CONST_ONE] = Abc_Var2Lit( i1, 1 );
     pList[CONST_TWO] = Abc_Var2Lit( o, 0 );
-    sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
+    if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
+        return 0;
+    }
     pList[CONST_ZERO] = Abc_Var2Lit( c, 0 );
     pList[CONST_ONE] = Abc_Var2Lit( o, 1 );
     pList[CONST_TWO] = Abc_Var2Lit( i0, 0 );
-    sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
+    if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
+        return 0;
+    }
     pList[CONST_ZERO] = Abc_Var2Lit( c, 0 );
     pList[CONST_ONE] = Abc_Var2Lit( i0, 1 );
     pList[CONST_TWO] = Abc_Var2Lit( o, 0 );
-    sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
+    if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
+        return 0;
+    }
+    return 1;
 }
 /**
  * @brief Adding bdd P variable clauses inner function.
@@ -1058,7 +1077,7 @@ void AddMuxEncoding( PexaMan_t * p, int o, int c, int i1, int i0 )
  * @param i Gate iteration variable.
  * @param mSize Amount of m variables for bdd.
  */
-void AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
+bool AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
 {
     int xIt;
     int mStart = p->iVar;
@@ -1069,9 +1088,15 @@ void AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
     p->iVar += np;
     sat_solver_setnvars( p->pSat, p->iVar );
     int lit = Abc_Var2Lit( pStart, 1 );
-    sat_solver_addclause( p->pSat, &lit, &lit + 1 );  //restricting p0
+    if ( !sat_solver_addclause( p->pSat, &lit, &lit + 1 ) )
+    {  //restricting p0
+        return 0;
+    }
     lit = Abc_Var2Lit( mStart, 0 );
-    sat_solver_addclause( p->pSat, &lit, &lit + 1 );  //restricting m1 needs to be fulfilled
+    if ( !sat_solver_addclause( p->pSat, &lit, &lit + 1 ) )
+    {  //restricting m1 needs to be fulfilled
+        return 0;
+    }
     int pVars[( 2 * np ) - 2];
     for ( int p = 0; p < np; p++ )
     {
@@ -1102,7 +1127,10 @@ void AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
             m1 = mStart + m + xEnd;
             m0 = mStart + m + 1;
         }
-        AddMuxEncoding( p, mStart + m, xIt, m1, m0 );
+        if ( !AddMuxEncoding( p, mStart + m, xIt, m1, m0 ) )
+        {
+            return 0;
+        }
         x++;
         if ( x == xEnd )
         {
@@ -1111,8 +1139,90 @@ void AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
             y++;
         }
     }
+    return 1;
 }
+/**
+ * @brief Adding bdd P variable clauses sanity constraints upper bound.
+ *
+ * @details Adds the P variable clauses for BDD encoding to CNF encoding
+ *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate is fulfilled.
+ *          Constraints upper bound.
+ *
+ * @param p Pexact struct.
+ * @param i Gate iteration variable.
+ * @param mSize Amount of m variables for bdd.
+ */
+bool AddPClausesBddSumOneUpper( PexaMan_t * p, int i, int j, int mSize )
+{
+    int np = pow( 2, p->nVars - 1 ) + 1;
+    int litSum = 0;
+    int res[np - 1];
+    int pList[np - 1];
+    ConvertBaseInt( 2, j, np - 1, res );
+    int sum = 0;
+    for ( int l = 0; l < np - 1; l++ )
+    {
+        sum += *( res + l );
+    }
+    if ( sum == 2 )
+    {
+        litSum = 0;
+        for ( int l = 0; l < np - 1; l++ )
+        {
+            if ( *( res + l ) == 1 )
+            {
+                pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1, 1 );
+            }
+        }
+        if ( !sat_solver_addclause( p->pSat, pList, pList + litSum ) )
+        {
+            return 0;
+        }
+    }
+    return 1;
+}
+/**
+ * @brief Adding bdd P variable clauses sanity constraints lower bound.
+ *
+ * @details Adds the P variable clauses for BDD encoding to CNF encoding
+ *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate is fulfilled.
+ *          Constraints lower bound.
+ *
+ * @param p Pexact struct.
+ * @param i Gate iteration variable.
+ * @param mSize Amount of m variables for bdd.
+ */
+bool AddPClausesBddSumOneLower( PexaMan_t * p, int i, int j, int mSize )
+{
+    int np = pow( 2, p->nVars - 1 ) + 1;
+    int pList[np - 1];
 
+    int litSum = 0;
+    int res[np - 1];
+    ConvertBaseInt( 2, j, np - 1, res );
+    int sum = 0;
+    for ( int l = 0; l < np - 1; l++ )
+    {
+        sum += *( res + l );
+    }
+    if ( sum == np - 1 )
+    {
+        litSum = 0;
+        for ( int l = 0; l < np - 1; l++ )
+        {
+            if ( *( res + l ) == 1 )
+            {
+                pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1, 0 );
+            }
+        }
+        if ( !sat_solver_addclause( p->pSat, pList, pList + litSum ) )
+        {
+            return 0;
+        }
+    }
+
+    return 1;
+}
 /**
  * @brief Adding bdd P variable clauses sanity constraints.
  *
@@ -1123,56 +1233,21 @@ void AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
  * @param i Gate iteration variable.
  * @param mSize Amount of m variables for bdd.
  */
-void AddPClausesBddSumOne( PexaMan_t * p, int i, int mSize )
+bool AddPClausesBddSumOne( PexaMan_t * p, int i, int mSize )
 {
     int np = pow( 2, p->nVars - 1 ) + 1;
-    int pList[np - 1];
     for ( int j = 0; j < pow( 2, np - 1 ); j++ )
     {
-        int litSum = 0;
-        int res[np - 1];
-        ConvertBaseInt( 2, j, np - 1, res );
-        int sum = 0;
-        for ( int l = 0; l < np - 1; l++ )
+        if ( !AddPClausesBddSumOneLower( p, i, j, mSize ) )
         {
-            sum += *( res + l );
+            return 0;
         }
-        if ( sum == 2 )
+        if ( !AddPClausesBddSumOneUpper( p, i, j, mSize ) )
         {
-            litSum = 0;
-            for ( int l = 0; l < np - 1; l++ )
-            {
-                if ( *( res + l ) == 1 )
-                {
-                    pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1, 1 );
-                }
-            }
-            sat_solver_addclause( p->pSat, pList, pList + litSum );
+            return 0;
         }
     }
-    for ( int j = 0; j < pow( 2, np - 1 ); j++ )
-    {
-        int litSum = 0;
-        int res[np - 1];
-        ConvertBaseInt( 2, j, np - 1, res );
-        int sum = 0;
-        for ( int l = 0; l < np - 1; l++ )
-        {
-            sum += *( res + l );
-        }
-        if ( sum == np - 1 )
-        {
-            litSum = 0;
-            for ( int l = 0; l < np - 1; l++ )
-            {
-                if ( *( res + l ) == 1 )
-                {
-                    pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1, 0 );
-                }
-            }
-            sat_solver_addclause( p->pSat, pList, pList + litSum );
-        }
-    }
+    return 1;
 }
 
 /**
@@ -1182,7 +1257,7 @@ void AddPClausesBddSumOne( PexaMan_t * p, int i, int mSize )
  *
  * @param p Pexact struct.
  */
-void PexaManAddPClausesBdd( PexaMan_t * p )
+bool PexaManAddPClausesBdd( PexaMan_t * p )
 {
     int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
     int mSize = pow( 2, p->nVars ) - 1;
@@ -1196,10 +1271,17 @@ void PexaManAddPClausesBdd( PexaMan_t * p )
     p->i_p = p->iVar;
     for ( int i = p->nVars + 1; i < p->nVars + p->nNodes; i++ )
     {
-        AddPClausesBddInner( p, i, mSize, xiBase );
+        if ( !AddPClausesBddInner( p, i, mSize, xiBase ) )
+        {
+            return 0;
+        }
         ///////////////////////////////Sum(p)=1
-        AddPClausesBddSumOne( p, i, mSize );
+        if ( !AddPClausesBddSumOne( p, i, mSize ) )
+        {
+            return 0;
+        }
     }
+    return 1;
 }
 /**
  * @brief Calculating maximum switching activity.
@@ -1225,6 +1307,28 @@ int CalcMaxAct( int r, int k )
     return ret;
 }
 /**
+ * @brief Evaluate k=4 restrictions.
+ *
+ * @details Calculates all combinations of switching activities for a given gate count and input size.
+ *
+ * @param res Combinational array.
+ */
+bool EvaluateRestrictions4( const int * res )
+{
+    int p2 = *( res + CONST_ONE );
+    int p4 = *( res + CONST_THREE );
+    int p6 = *( res + CONST_FIVE );
+    int p8 = *( res + CONST_SEVEN );
+    int exep1 = ( p4 >= 2 ) | ( p8 > 01 ) | ( ( p4 >= 1 ) && ( p8 >= 1 ) ) | ( ( ( p4 >= 1 ) | ( p8 >= 1 ) ) && ( ( p2 >= 1 ) | ( p6 >= 1 ) ) );
+    int exep2 = ( *( res ) <= CONST_TEN - 2 ) && ( *( res + 1 ) <= CONST_TEN - 1 ) && ( *( res + 2 ) <= CONST_TEN - 2 ) && ( *( res + CONST_FOUR ) <= CONST_TEN - 2 ) && ( *( res + CONST_FIVE ) <= CONST_TEN - 1 ) && ( *( res + CONST_SIX ) <= CONST_TEN - 2 );
+    if ( exep1 == 1 && exep2 == 1 )
+    {
+        return 1;
+    }
+    return 0;
+}
+
+/**
  * @brief Calculating combinational list for given r.
  *
  * @details Calculates all combinations of switching activities for a given gate count and input size.
@@ -1233,11 +1337,11 @@ int CalcMaxAct( int r, int k )
  * @param r Gate count.
  * @param list Combination list.
  */
-void CalculateCombArray( int k, int r, CombList_t * list )
+bool CalculateCombArray( int k, int r, CombList_t * list )
 {
     if ( r == 0 )
     {
-        return;
+        return 0;
     }
     int size = pow( r + 1, pow( 2, k - 1 ) );
     int sizeSingle = pow( 2, k - 1 );
@@ -1262,43 +1366,45 @@ void CalculateCombArray( int k, int r, CombList_t * list )
             }
         }
 
-        if ( sum == r )
+        if ( sum != r )
         {
-            if ( k == 4 )
+            continue;
+        }
+
+        if ( k == 4 )
+        {
+            if ( EvaluateRestrictions4( res ) )
             {
-                int p2 = *( res + CONST_ONE );
-                int p4 = *( res + CONST_THREE );
-                int p6 = *( res + CONST_FIVE );
-                int p8 = *( res + CONST_SEVEN );
-                int exep1 = ( p4 >= 2 ) | ( p8 > 01 ) | ( ( p4 >= 1 ) && ( p8 >= 1 ) ) | ( ( ( p4 >= 1 ) | ( p8 >= 1 ) ) && ( ( p2 >= 1 ) | ( p6 >= 1 ) ) );
-                int exep2 = ( *( res ) <= r - 2 ) && ( *( res + 1 ) <= r - 1 ) && ( *( res + 2 ) <= r - 2 ) && ( *( res + CONST_FOUR ) <= r - 2 ) && ( *( res + CONST_FIVE ) <= r - 1 ) && ( *( res + CONST_SIX ) <= r - 2 );
-                if ( exep1 == 1 && exep2 == 1 )
+                if ( !AddCombi( sumAct, r, res, sizeSingle, list ) )
                 {
-                    AddCombi( sumAct, r, res, list );
+                    return 0;
                 }
-            } else
+            }
+        } else
+        {
+            if ( !AddCombi( sumAct, r, res, sizeSingle, list ) )
             {
-                AddCombi( sumAct, r, res, list );
+                return 0;
             }
         }
     }
+    return 1;
 }
 /**
- * @brief Cardinality constraints insertion.
+ * @brief Cardinality constraints insertion lower bound.
  *
  * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
+ *          Lower bound.
  *
  * @param p Pexact struct.
  * @param combi combinational array.
  * @param xp iteration variable of p variables.
  */
-void PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
+bool PexaManAddCardinalityLower( PexaMan_t * p, const int * combi, int xp )
 {
     int ni = p->nNodes - 1;
     int np = pow( 2, p->nVars - 1 );
-    // for(int pi=0;pi<n_p;pi++){
     int pi = xp;
-    // printf("constrain for Sum:p_%d=%d\n",pi+1,*(combi+pi));
     int pList[ni];
     int lit = 0;
     int l = *( combi + pi );
@@ -1325,12 +1431,34 @@ void PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
                 }
             }
             // printf("\n");
-            sat_solver_addclause( p->pSat, pList, pList + lit );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + lit ) )
+            {
+                return 0;
+            }
         }
     }
-    lit = 0;
+    return 1;
+}
+/**
+ * @brief Cardinality constraints insertion upper bounds.
+ *
+ * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
+ *          Upper bound.
+ *
+ * @param p Pexact struct.
+ * @param combi combinational array.
+ * @param xp iteration variable of p variables.
+ */
+bool PexaManAddCardinalityUpper( PexaMan_t * p, const int * combi, int xp )
+{
+    int ni = p->nNodes - 1;
+    int np = pow( 2, p->nVars - 1 );
+    int pi = xp;
+    int pList[ni];
+    int lit = 0;
+    int l = *( combi + pi );
     // more then l
-    j = ni - l + 1;
+    int j = ni - l + 1;
     for ( int i = 0; i < pow( 2, ni ); i++ )
     {
         int res[ni];
@@ -1350,9 +1478,34 @@ void PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
                     pList[lit++] = Abc_Var2Lit( p->i_p + ( l * np ) + pi, 0 );
                 }
             }
-            sat_solver_addclause( p->pSat, pList, pList + lit );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + lit ) )
+            {
+                return 0;
+            }
         }
     }
+    return 1;
+}
+/**
+ * @brief Cardinality constraints insertion.
+ *
+ * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
+ *
+ * @param p Pexact struct.
+ * @param combi combinational array.
+ * @param xp iteration variable of p variables.
+ */
+bool PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
+{
+    if ( !PexaManAddCardinalityLower( p, combi, xp ) )
+    {
+        return 0;
+    }
+    if ( !PexaManAddCardinalityUpper( p, combi, xp ) )
+    {
+        return 0;
+    }
+    return 1;
 }
 /**
  * @brief Counts amount of ones.
@@ -1385,7 +1538,7 @@ int CountOne( int value, int len )
  * @param p Pexact struct.
  * @param i Gate iteration variable
  */
-void AddPClausesInner( PexaMan_t * p, int i )
+bool AddPClausesInner( PexaMan_t * p, int i )
 {
     int pStartvar = p->iVar;
     int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
@@ -1395,6 +1548,7 @@ void AddPClausesInner( PexaMan_t * p, int i )
     int pList[litsize];
     int pListP[litsize];
     int xIt = 0;
+    int pTarget = 0;
     sat_solver_setnvars( p->pSat, p->iVar );
     for ( int p = 0; p < np; p++ )
     {
@@ -1408,12 +1562,21 @@ void AddPClausesInner( PexaMan_t * p, int i )
             xIt = xiBase + ( CONST_THREE * ( i - p->nVars ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) );
             pList[t - 1] = Abc_Var2Lit( xIt, ValueNthBit( m, t - 1 ) );
         }
-        pList[litsize - 1] = pListP[CountOne( m, litsize - 1 ) - 1];
-        sat_solver_addclause( p->pSat, pList, pList + litsize );
+        pTarget = CountOne( m, litsize - 1 ) - 1;
+        if ( pTarget < 0 || pTarget >= ( litsize - 1 ) )
+        {
+            return 0;
+        }
+        pList[litsize - 1] = pListP[pTarget];
+        if ( !sat_solver_addclause( p->pSat, pList, pList + litsize ) )
+        {
+            return 0;
+        }
     }
+    return 1;
 }
 /**
- * @brief Adds naive p variable encoding.
+ * @brief Adds naive p variable encoding lower bound.
  *
  * @details Introduces naive p variable encoding to SAT CNF encoding. Helper function of PexaManAddPClauses.
  *          Ensures that only one p variable is satisfied.
@@ -1421,7 +1584,7 @@ void AddPClausesInner( PexaMan_t * p, int i )
  * @param p Pexact struct.
  * @param i Gate iteration variable
  */
-void AddPClausesSumOne( PexaMan_t * p, int i )
+bool AddPClausesSumOneLower( PexaMan_t * p, int i )
 {
     int litsize = pow( 2, p->nVars );
     int np = pow( 2, p->nVars - 1 );
@@ -1446,9 +1609,28 @@ void AddPClausesSumOne( PexaMan_t * p, int i )
                     pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * np ) + l, 1 );
                 }
             }
-            sat_solver_addclause( p->pSat, pList, pList + litSum );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + litSum ) )
+            {
+                return 0;
+            }
         }
     }
+    return 1;
+}
+/**
+ * @brief Adds naive p variable encoding upper bound.
+ *
+ * @details Introduces naive p variable encoding to SAT CNF encoding. Helper function of PexaManAddPClauses.
+ *          Ensures that only one p variable is satisfied.
+ *
+ * @param p Pexact struct.
+ * @param i Gate iteration variable
+ */
+bool AddPClausesSumOneUpper( PexaMan_t * p, int i )
+{
+    int litsize = pow( 2, p->nVars );
+    int np = pow( 2, p->nVars - 1 );
+    int pList[litsize];
     for ( int j = 0; j < pow( 2, np ); j++ )
     {
         int litSum = 0;
@@ -1469,9 +1651,34 @@ void AddPClausesSumOne( PexaMan_t * p, int i )
                     pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * np ) + l, 0 );
                 }
             }
-            sat_solver_addclause( p->pSat, pList, pList + litSum );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + litSum ) )
+            {
+                return 0;
+            }
         }
     }
+    return 1;
+}
+/**
+ * @brief Adds naive p variable encoding.
+ *
+ * @details Introduces naive p variable encoding to SAT CNF encoding. Helper function of PexaManAddPClauses.
+ *          Ensures that only one p variable is satisfied.
+ *
+ * @param p Pexact struct.
+ * @param i Gate iteration variable
+ */
+bool AddPClausesSumOne( PexaMan_t * p, int i )
+{
+    if ( !AddPClausesSumOneLower( p, i ) )
+    {
+        return 0;
+    }
+    if ( !AddPClausesSumOneUpper( p, i ) )
+    {
+        return 0;
+    }
+    return 1;
 }
 /**
  * @brief Adds naive p variable encoding.
@@ -1480,14 +1687,21 @@ void AddPClausesSumOne( PexaMan_t * p, int i )
  *
  * @param p Pexact struct.
  */
-void PexaManAddPClauses( PexaMan_t * p )
+bool PexaManAddPClauses( PexaMan_t * p )
 {
     p->i_p = p->iVar;
     for ( int i = p->nVars + 1; i < p->nVars + p->nNodes; i++ )
     {
-        AddPClausesInner( p, i );
-        AddPClausesSumOne( p, i );
+        if ( !AddPClausesInner( p, i ) )
+        {
+            return 0;
+        }
+        if ( !AddPClausesSumOne( p, i ) )
+        {
+            return 0;
+        }
     }
+    return 1;
 }
 /**
  * @brief Adds carinality constraints.
@@ -1498,7 +1712,7 @@ void PexaManAddPClauses( PexaMan_t * p )
  * @param combi combinational array.
  * @param xp iteration variable of p variables.
  */
-void PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, int xp )
+bool AddCardinalityBddLower( PexaMan_t * p, const int * combi, int xp )
 {
     int ni = p->nNodes - 1;
     int np = pow( 2, p->nVars - 1 ) + 1;
@@ -1534,12 +1748,37 @@ void PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, int xp )
                 }
             }
             // printf("\n");
-            sat_solver_addclause( p->pSat, pList, pList + lit );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + lit ) )
+            {
+                return 0;
+            }
         }
     }
-    lit = 0;
-    // more then l
-    j = ni - l + 1;
+    return 1;
+}
+/**
+ * @brief Adds carinality constraints.
+ *
+ * @details Introduces cardinality constraints for bdd type encoding for p variables to SAT CNF encoding.
+ *
+ * @param p Pexact struct.
+ * @param combi combinational array.
+ * @param xp iteration variable of p variables.
+ */
+bool AddCardinalityBddUpper( PexaMan_t * p, const int * combi, int xp )
+{
+    int ni = p->nNodes - 1;
+    int np = pow( 2, p->nVars - 1 ) + 1;
+    int mLen = 0;
+    for ( int i = 1; i <= pow( 2, p->nVars ) - 1; i++ )
+    {
+        mLen += i;
+    }
+    int pi = xp;
+    int pList[ni];
+    int lit = 0;
+    int l = *( combi + pi );
+    int j = ni - l + 1;
     for ( int i = 0; i < pow( 2, ni ); i++ )
     {
         int res[ni];
@@ -1559,28 +1798,61 @@ void PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, int xp )
                     pList[lit++] = Abc_Var2Lit( p->i_p + mLen + ( l * ( mLen + np ) ) + pi + 1, 0 );
                 }
             }
-            sat_solver_addclause( p->pSat, pList, pList + lit );
+            if ( !sat_solver_addclause( p->pSat, pList, pList + lit ) )
+            {
+                return 0;
+            }
         }
     }
+    return 1;
+}
+/**
+ * @brief Adds carinality constraints.
+ *
+ * @details Introduces cardinality constraints for bdd type encoding for p variables to SAT CNF encoding.
+ *
+ * @param p Pexact struct.
+ * @param combi combinational array.
+ * @param xp iteration variable of p variables.
+ */
+bool PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, int xp )
+{
+    if ( !AddCardinalityBddLower( p, combi, xp ) )
+    {
+        return 0;
+    }
+    if ( !AddCardinalityBddUpper( p, combi, xp ) )
+    {
+        return 0;
+    }
+    return 1;
 }
 
-int ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, CombList_t * list )
+bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, CombList_t * list )
 {
-    int status = PexaManAddCnfStart( p, pPars->fOnlyAnd );
+    if ( !PexaManAddCnfStart( p, pPars->fOnlyAnd ) )
+    {
+        return 0;
+    }
     for ( int iMint = 1; iMint < pow( 2, p->nVars ); iMint++ )
     {
         if ( !PexaManAddCnf( p, iMint ) )
         {
-            printf( "Error: CNF encoding failed for minterm %d.\n", iMint );
-            break;
+            return 0;
         }
     }
-    PexaManAddPClausesBdd( p );
+    if ( !PexaManAddPClausesBdd( p ) )
+    {
+        return 0;
+    }
     for ( int i0 = 0; i0 < list->len; i0++ )
     {
-        PexaManAddCardinalityBdd( p, node->combi, i0 );
+        if ( !PexaManAddCardinalityBdd( p, node->combi, i0 ) )
+        {
+            return 0;
+        }
     }
-    return status;
+    return 1;
 }
 /**
  * @brief Running exact synthesis.
@@ -1595,10 +1867,9 @@ int ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, C
  *
  * @return Returns 0 if synthesis was successful.
  */
-int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars, int verbose )
+int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
 {
     int status = 0;
-    int iMint = 1;
     abctime clkTotal = Abc_Clock();
     PexaMan_t * p;
     int fCompl = 0;
@@ -1622,30 +1893,23 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars, int verbose )
         {
             r++;
             pPars->nNodes = r + 1;
-            CalculateCombArray( p->nVars, r, list );
+            if ( !CalculateCombArray( p->nVars, r, list ) )
+            {
+                printf( "Error: could not calculate combination array.\n" );
+                FreeCombList( list );
+                return 0;
+            }
         }
         if ( list->length > 0 && list->start->act == act )
         {
             Comb_t * node = PopComb( list );
-            if ( verbose == 2 )
-            {
-                printf( "###ACT:%d,r:%d CONSUMED COMBINATION:", ( node->act ), node->r + 1 );
-            }
-            for ( int im = 0; im < list->len; im++ )
-            {
-                if ( verbose == 2 )
-                {
-                    printf( "%d,", *( node->combi + im ) );
-                }
-            }
-            if ( verbose == 2 )
-            {
-                printf( "\n" );
-            }
             PexaManFree( p );
             pPars->nNodes = node->r + 1;
             p = PexaManAlloc( pPars, pTruth );
-            status = ExactPowerSynthesisCNF( pPars, p, node, list );
+            if ( !ExactPowerSynthesisCNF( pPars, p, node, list ) )
+            {
+                continue;
+            }
             status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
             if ( status == 1 )
             {

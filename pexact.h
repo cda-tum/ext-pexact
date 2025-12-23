@@ -105,6 +105,6 @@ struct CombList_t_ {
 };
 
 int PowerExactSynthesisBase( Bmc_EsPar_t * pPars );
-int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars, int verbose );
+int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars );
 
 #endif
