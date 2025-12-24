@@ -966,10 +966,6 @@ void FreeCombList( CombList_t * list )
     while ( list->length > 0 )
     {
         Comb_t * node = PopComb( list );
-        if ( node == NULL )
-        {
-            break;
-        }
         free( node->combi );
         free( node );
     }
@@ -1919,12 +1915,6 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
         if ( list->length > 0 && list->start->act == act )
         {
             Comb_t * node = PopComb( list );
-            if ( node == NULL )
-            {
-                printf( "Error: could not pop combination.\n" );
-                FreeCombList( list );
-                return 0;
-            }
             PexaManFree( p );
             pPars->nNodes = node->r + 1;
             p = PexaManAlloc( pPars, pTruth );
