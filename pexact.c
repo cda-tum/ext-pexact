@@ -895,6 +895,7 @@ bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * lis
     node->act = act;
     node->r = r;
     node->combi = ( int * )malloc( len * sizeof( int ) );
+    node->next = NULL;
 
     for ( int i = 0; i < len; i++ )
     {
@@ -942,7 +943,7 @@ bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * lis
  */
 Comb_t * PopComb( CombList_t * list )
 {
-    if ( list->start == 0 )
+    if ( list->start == NULL )
     {
         return NULL;
     }
@@ -951,6 +952,9 @@ Comb_t * PopComb( CombList_t * list )
     if ( list->start->next != NULL )
     {
         list->start = list->start->next;
+    } else
+    {
+        list->start = NULL;
     }
     return node;
 }
@@ -966,8 +970,11 @@ void FreeCombList( CombList_t * list )
     while ( list->length > 0 )
     {
         Comb_t * node = PopComb( list );
-        free( node->combi );
-        free( node );
+        if ( node )
+        {
+            free( node->combi );
+            free( node );
+        }
     }
 }
 /**
@@ -1321,8 +1328,12 @@ int CalcMaxAct( int r, int k )
  *
  * @param res Combinational array.
  */
-bool EvaluateRestrictions4( const int * res )
+bool EvaluateRestrictions4( const int * res, int resLen )
 {
+    if ( resLen <= CONST_SEVEN )
+    {
+        return false;
+    }
     int p2 = *( res + CONST_ONE );
     int p4 = *( res + CONST_THREE );
     int p6 = *( res + CONST_FIVE );
@@ -1381,7 +1392,7 @@ bool CalculateCombArray( int k, int r, CombList_t * list )
 
         if ( k == 4 )
         {
-            if ( EvaluateRestrictions4( res ) )
+            if ( EvaluateRestrictions4( res, sizeSingle ) )
             {
                 if ( !AddCombi( sumAct, r, res, sizeSingle, list ) )
                 {
@@ -1915,8 +1926,8 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
         if ( list->length > 0 && list->start->act == act )
         {
             Comb_t * node = PopComb( list );
-            PexaManFree( p );
             pPars->nNodes = node->r + 1;
+            PexaManFree( p );
             p = PexaManAlloc( pPars, pTruth );
             if ( !ExactPowerSynthesisCNF( pPars, p, node, list ) )
             {
