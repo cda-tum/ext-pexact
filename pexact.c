@@ -1920,6 +1920,8 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
             {
                 printf( "Error: could not calculate combination array.\n" );
                 FreeCombList( list );
+                free( list );
+                PexaManFree( p );
                 return 0;
             }
         }
