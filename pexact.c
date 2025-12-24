@@ -1573,14 +1573,14 @@ bool AddPClausesInner( PexaMan_t * p, int i )
     {
         pListP[p] = 0;
     }
-    for ( int p = 0; p < np; p++ )
+    for ( int p = 0; p < np && p < litsize; p++ )
     {
         pListP[p] = Abc_Var2Lit( pStartvar++, 0 );
     }
 
     for ( int m = 1; m < nCombs; m++ )
     {
-        for ( int t = 1; t < pow( 2, p->nVars ); t++ )
+        for ( int t = 1; t < pow( 2, p->nVars ) && t <= litsize; t++ )
         {
             xIt = xiBase + ( CONST_THREE * ( i - p->nVars ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) );
             pList[t - 1] = Abc_Var2Lit( xIt, ValueNthBit( m, t - 1 ) );
