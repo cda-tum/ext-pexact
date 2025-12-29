@@ -892,11 +892,18 @@ bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * lis
         return 0;
     }
     Comb_t * node = ( Comb_t * )malloc( sizeof( Comb_t ) );
+    if ( node == NULL )
+    {
+        return 0;
+    }
     node->act = act;
     node->r = r;
     node->combi = ( int * )malloc( len * sizeof( int ) );
+    if ( node->combi == NULL )
+    {
+        return 0;
+    }
     node->next = NULL;
-
     for ( int i = 0; i < len; i++ )
     {
         *( node->combi + i ) = *( combi + i );
@@ -1113,13 +1120,13 @@ bool AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
         return 0;
     }
     int pVars[( 2 * np ) - 2];
-    for ( int p = 0; p < np; p++ )
+    for ( int pi = 0; pi < np; pi++ )
     {
-        pVars[p] = pStart + p;
+        pVars[pi] = pStart + pi;
     }
-    for ( int p = np; ( p < ( 2 * np ) - 2 ) && ( p >= 0 ); p++ )
+    for ( int pi = np; ( pi < ( 2 * np ) - 2 ) && ( pi >= 0 ); pi++ )
     {
-        pVars[p] = pStart + ( 2 * np ) - 2 - p;
+        pVars[pi] = pStart + ( 2 * np ) - 2 - pi;
     }
     //printf("Adding MUX Clauses for i=%d\n",i);
     int xEnd = pow( 2, p->nVars ) - 1;
@@ -1338,7 +1345,7 @@ bool EvaluateRestrictions4( const int * res, int resLen )
     int p4 = *( res + CONST_THREE );
     int p6 = *( res + CONST_FIVE );
     int p8 = *( res + CONST_SEVEN );
-    int exep1 = ( p4 >= 2 ) | ( p8 > 01 ) | ( ( p4 >= 1 ) && ( p8 >= 1 ) ) | ( ( ( p4 >= 1 ) | ( p8 >= 1 ) ) && ( ( p2 >= 1 ) | ( p6 >= 1 ) ) );
+    int exep1 = ( p4 >= 2 ) | ( p8 > 1 ) | ( ( p4 >= 1 ) && ( p8 >= 1 ) ) | ( ( ( p4 >= 1 ) | ( p8 >= 1 ) ) && ( ( p2 >= 1 ) | ( p6 >= 1 ) ) );
     int exep2 = ( *( res ) <= CONST_TEN - 2 ) && ( *( res + 1 ) <= CONST_TEN - 1 ) && ( *( res + 2 ) <= CONST_TEN - 2 ) && ( *( res + CONST_FOUR ) <= CONST_TEN - 2 ) && ( *( res + CONST_FIVE ) <= CONST_TEN - 1 ) && ( *( res + CONST_SIX ) <= CONST_TEN - 2 );
     if ( exep1 == 1 && exep2 == 1 )
     {
@@ -1906,15 +1913,25 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
         Abc_TtNot( pTruth, p->nWords );
     }
     CombList_t * list = ( CombList_t * )malloc( sizeof( CombList_t ) );
+    if ( list == NULL )
+    {
+        return 1;
+    }
     list->len = pow( 2, p->nVars - 1 );
     list->length = 0;
     int r = 0;
     int act = 0;
-    while ( 1 )
+    int maxGateCount = MAJ_NOBJS - p->nVars;
+    while ( r < maxGateCount )
     {
         if ( act >= CalcMaxAct( r + 1, p->nVars ) )
         {
             r++;
+            if ( r >= maxGateCount )
+            {
+                printf( "No solution found within %d gates.\n", maxGateCount );
+                break;
+            }
             pPars->nNodes = r + 1;
             if ( !CalculateCombArray( p->nVars, r, list ) )
             {
@@ -1952,5 +1969,5 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
         act++;
     }
     FreeCombList( list );
-    return 0;
+    return 1;
 }
