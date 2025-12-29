@@ -924,6 +924,10 @@ bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * lis
         {
             for ( int l = 0; l < list->length - 1; l++ )
             {
+                if ( ptr->next == NULL )
+                {
+                    break;
+                }
                 if ( ( ( ptr->act <= act ) && ( ptr->next->act > act ) ) || ( ( ptr->act == act ) && ( ptr->next->act == act ) && ( r >= ptr->r ) && ( r <= ptr->next->r ) ) )
                 {
                     node->next = ptr->next;
@@ -1921,6 +1925,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
     }
     list->len = pow( 2, p->nVars - 1 );
     list->length = 0;
+    list->start = NULL;
     int r = 0;
     int act = 0;
     int maxGateCount = MAJ_NOBJS - p->nVars;
@@ -1935,7 +1940,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
                 FreeCombList( list );
                 free( list );
                 PexaManFree( p );
-                return 0;
+                return 1;
             }
             pPars->nNodes = r + 1;
             if ( !CalculateCombArray( p->nVars, r, list ) )
@@ -1944,7 +1949,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
                 FreeCombList( list );
                 free( list );
                 PexaManFree( p );
-                return 0;
+                return 1;
             }
         }
         if ( list->length > 0 && list->start->act == act )
@@ -1965,7 +1970,9 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
                 PexaManPrintSolution( p, fCompl, true );
                 PexaManFree( p );
                 Abc_PrintTime( 1, "Total runtime", Abc_Clock() - clkTotal );
-                break;
+                FreeCombList( list );
+                free( list );
+                return 0;  // Success
             }
             free( node->combi );
             free( node );
