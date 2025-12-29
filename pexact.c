@@ -901,6 +901,7 @@ bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * lis
     node->combi = ( int * )malloc( len * sizeof( int ) );
     if ( node->combi == NULL )
     {
+        free( node );
         return 0;
     }
     node->next = NULL;
@@ -1915,6 +1916,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
     CombList_t * list = ( CombList_t * )malloc( sizeof( CombList_t ) );
     if ( list == NULL )
     {
+        PexaManFree( p );
         return 1;
     }
     list->len = pow( 2, p->nVars - 1 );
@@ -1930,7 +1932,10 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
             if ( r >= maxGateCount )
             {
                 printf( "No solution found within %d gates.\n", maxGateCount );
-                break;
+                FreeCombList( list );
+                free( list );
+                PexaManFree( p );
+                return 0;
             }
             pPars->nNodes = r + 1;
             if ( !CalculateCombArray( p->nVars, r, list ) )
