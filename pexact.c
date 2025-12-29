@@ -1597,7 +1597,7 @@ bool AddPClausesInner( PexaMan_t * p, int i )
             pList[t - 1] = Abc_Var2Lit( xIt, ValueNthBit( m, t - 1 ) );
         }
         pTarget = CountOne( m, litsize - 1 ) - 1;
-        if ( pTarget < 0 || pTarget >= ( litsize - 1 ) )
+        if ( pTarget < 0 || pTarget > ( litsize - 1 ) )
         {
             return 0;
         }
