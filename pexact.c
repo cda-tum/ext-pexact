@@ -922,22 +922,21 @@ bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * lis
             node->next = ptr;
         } else
         {
-            for ( int l = 0; l < list->length - 1; l++ )
+            while ( ptr->next != NULL )
             {
-                if ( ptr->next == NULL )
-                {
-                    break;
-                }
                 if ( ( ( ptr->act <= act ) && ( ptr->next->act > act ) ) || ( ( ptr->act == act ) && ( ptr->next->act == act ) && ( r >= ptr->r ) && ( r <= ptr->next->r ) ) )
                 {
                     node->next = ptr->next;
-                    break;
+                    ptr->next = node;
+                    list->length++;
+                    return 1;
                 }
                 ptr = ptr->next;
             }
             ptr->next = node;
         }
     }
+    // Append at end
     list->length++;
     return 1;
 }
@@ -1581,13 +1580,13 @@ bool AddPClausesInner( PexaMan_t * p, int i )
     int xIt = 0;
     int pTarget = 0;
     sat_solver_setnvars( p->pSat, p->iVar );
-    for ( int p = 0; p < litsize; p++ )
+    for ( int pi = 0; pi < litsize; pi++ )
     {
-        pListP[p] = 0;
+        pListP[pi] = 0;
     }
-    for ( int p = 0; p < np && p < litsize; p++ )
+    for ( int pi = 0; pi < np && pi < litsize; pi++ )
     {
-        pListP[p] = Abc_Var2Lit( pStartvar++, 0 );
+        pListP[pi] = Abc_Var2Lit( pStartvar++, 0 );
     }
 
     for ( int m = 1; m < nCombs; m++ )
@@ -1960,6 +1959,9 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
             p = PexaManAlloc( pPars, pTruth );
             if ( !ExactPowerSynthesisCNF( pPars, p, node, list ) )
             {
+                printf( "Warning: CNF encoding failed for combination act=%d r=%d.\n", node->act, node->r );
+                free( node->combi );
+                free( node );
                 continue;
             }
             status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
