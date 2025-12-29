@@ -1909,7 +1909,11 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
     int fCompl = 0;
     word pTruth[16];
     Abc_TtReadHex( pTruth, pPars->pTtStr );
-    assert( pPars->nVars <= CONST_TEN );
+    if ( ( pPars->nVars < 2 ) || ( pPars->nVars > CONST_FIVE ) )
+    {
+        printf( "Error: nVars out of valid range (supported: 2..%d).\n", CONST_FIVE );
+        return 1;
+    }
     p = PexaManAlloc( pPars, pTruth );
     if ( pTruth[0] & 1 )
     {
@@ -1984,5 +1988,6 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
     }
     FreeCombList( list );
     free( list );
+    PexaManFree( p );
     return 1;
 }
