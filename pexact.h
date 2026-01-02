@@ -18,6 +18,9 @@
 
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
+
+const int INT_MAX = 2147483647;
+
 const int CONST_ZERO = 0;
 const int CONST_ONE = 1;
 const int CONST_TWO = 2;
