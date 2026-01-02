@@ -19,7 +19,7 @@
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
 
-const int INT_MAX = 2147483647;
+const int PEXACT_INT_MAX = 2147483647;
 
 const int CONST_ZERO = 0;
 const int CONST_ONE = 1;
@@ -96,8 +96,8 @@ struct Comb_t_ {
  *
  * @details Combination list storing certain combinations with their internal data.
  *
- * @param start Switching activity.
- * @param len Number of stored combinations.
+ * @param start Pointer to the first combination element in the list.
+ * @param len Maximum capacity of the list.
  * @param length Current length of the list.
  */
 typedef struct CombList_t_ CombList_t;
