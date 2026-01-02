@@ -1560,14 +1560,15 @@ bool PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
     return 1;
 }
 /**
- * @brief Counts amount of ones.
+ * @brief Counts maximum amount of ones or zeros.
  *
- * @details Calculates one count of a given value in binary representation.
+ * @details Calculates zeros and one count of a given value in binary representation.
+ *          Returns larger value.
  *
  * @param value Decimal value.
  * @param len Length of binary representation.
  *
- * @return Returns count of ones.
+ * @return Returns count of minimum ones.
  */
 int CountOne( int value, int len )
 {
@@ -1608,7 +1609,7 @@ bool AddPClausesInner( PexaMan_t * p, int i )
     {
         pListP[pi] = 0;
     }
-    for ( int pi = 0; pi < np && pi < litsize; pi++ )
+    for ( int pi = 0; pi < litsize; pi++ )
     {
         pListP[pi] = Abc_Var2Lit( pStartvar++, 0 );
     }
