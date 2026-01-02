@@ -2009,6 +2009,15 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
             pPars->nNodes = node->r + 1;
             PexaManFree( p );
             p = PexaManAlloc( pPars, pTruth );
+            if ( p == NULL )
+            {
+                printf( "Error: memory allocation failed for PexaMan_t.\n" );
+                free( node->combi );
+                free( node );
+                FreeCombList( list );
+                free( list );
+                return 1;
+            }
             if ( !ExactPowerSynthesisCNF( pPars, p, node, list ) )
             {
                 printf( "Warning: CNF encoding failed for combination act=%d r=%d.\n", node->act, node->r );
