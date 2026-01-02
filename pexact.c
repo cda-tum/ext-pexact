@@ -1560,15 +1560,14 @@ bool PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
     return 1;
 }
 /**
- * @brief Counts maximum amount of ones or zeros.
+ * @brief Returns minimum of (one-bits count, zero-bits count + 1).
  *
- * @details Calculates zeros and one count of a given value in binary representation.
- *          Returns larger value.
+ * @details Used for indexing pListP array. Caller typically subtracts 1 from result.
  *
  * @param value Decimal value.
  * @param len Length of binary representation.
  *
- * @return min(ones, zeros).
+ * @return min(one-bits, zero-bits + 1).
  */
 int CountOne( int value, int len )
 {
