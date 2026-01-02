@@ -1463,9 +1463,9 @@ bool PexaManAddCardinalityLower( PexaMan_t * p, const int * combi, int xp )
         int res[ni];
         ConvertBaseInt( 2, i, ni, res );
         int sum = 0;
-        for ( int l = 0; l < ni; l++ )
+        for ( int li = 0; li < ni; li++ )
         {
-            sum += *( res + l );
+            sum += *( res + li );
         }
         if ( sum == j )
         {
@@ -1568,7 +1568,7 @@ bool PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
  * @param value Decimal value.
  * @param len Length of binary representation.
  *
- * @return Returns count of minimum ones.
+ * @return min(ones, zeros).
  */
 int CountOne( int value, int len )
 {
