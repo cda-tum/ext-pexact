@@ -1599,7 +1599,6 @@ bool AddPClausesInner( PexaMan_t * p, int i )
     int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
     int litsize = pow( 2, p->nVars );
     int nCombs = pow( 2, pow( 2, p->nVars ) - 1 );
-    int np = pow( 2, p->nVars - 1 );
     int pList[litsize];
     int pListP[litsize];
     int xIt = 0;
