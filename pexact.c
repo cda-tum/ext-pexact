@@ -1389,6 +1389,13 @@ bool CalculateCombArray( int k, int r, CombList_t * list )
     {
         return 0;
     }
+    // Check for potential overflow in size calculation
+    double size_d = pow( r + 1, pow( 2, k - 1 ) );
+    if ( size_d > INT_MAX || size_d < 0 )
+    {
+        printf( "Error: combination array size exceeds limits for r=%d, k=%d.\n", r, k );
+        return 0;
+    }
     int size = pow( r + 1, pow( 2, k - 1 ) );
     int sizeSingle = pow( 2, k - 1 );
     int arraySingle[sizeSingle];
