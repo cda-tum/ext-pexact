@@ -19,6 +19,8 @@
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
 
+const long long PEXACT_LONG_LONG_MAX = 9223372036854775807;
+
 const int CONST_ZERO = 0;
 const int CONST_ONE = 1;
 const int CONST_TWO = 2;
