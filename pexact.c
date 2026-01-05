@@ -1017,7 +1017,7 @@ int PexaManEvalPVariablesBdd( PexaMan_t * p, const int * combi )
     {
         for ( int j = 0; j < np; j++ )
         {
-            combiSol[j] += sat_solver_var_value( p->pSat, p->i_p + ( ( np + mSize ) * i ) + j + mSize );
+            combiSol[j] += sat_solver_var_value( p->pSat, p->iPVariableStart + ( ( np + mSize ) * i ) + j + mSize );
         }
     }
     for ( int i = 0; i < np - 1; i++ )
@@ -1223,7 +1223,7 @@ bool AddPClausesBddSumOneUpper( PexaMan_t * p, int i, int j, int mSize )
         {
             if ( *( res + l ) == 1 )
             {
-                pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1, 1 );
+                pList[litSum++] = Abc_Var2Lit( p->iPVariableStart + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1, 1 );
             }
         }
         if ( !sat_solver_addclause( p->pSat, pList, pList + litSum ) )
@@ -1266,7 +1266,7 @@ bool AddPClausesBddSumOneLower( PexaMan_t * p, int i, int j, int mSize )
         {
             if ( *( res + l ) == 1 )
             {
-                pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1, 0 );
+                pList[litSum++] = Abc_Var2Lit( p->iPVariableStart + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1, 0 );
             }
         }
         if ( !sat_solver_addclause( p->pSat, pList, pList + litSum ) )
@@ -1326,7 +1326,7 @@ bool PexaManAddPClausesBdd( PexaMan_t * p )
         fak = fak + f;
     }
     mSize = fak;
-    p->i_p = p->iVar;
+    p->iPVariableStart = p->iVar;
     for ( int i = p->nVars + 1; i < p->nVars + p->nNodes; i++ )
     {
         if ( !AddPClausesBddInner( p, i, mSize, xiBase ) )
@@ -1411,7 +1411,7 @@ bool CalculateCombArray( int k, int r, CombList_t * list )
     }
     // Check for potential overflow in size calculation
     double sizeD = pow( r + 1, pow( 2, k - 1 ) );
-    if ( sizeD > PEXACT_LONG_LONG_MAX || sizeD < 0 )
+    if ( sizeD > PEXACT_LLONG_MAX || sizeD < 0 )
     {
         printf( "Error: combination array size exceeds limits for r=%d, k=%d.\n", r, k );
         return 0;
@@ -1502,7 +1502,7 @@ bool PexaManAddCardinalityLower( PexaMan_t * p, const int * combi, int xp )
                 if ( *( res + l ) == 1 )
                 {
                     // printf("%d,",l+1);
-                    pList[lit++] = Abc_Var2Lit( p->i_p + ( l * np ) + pi, 1 );
+                    pList[lit++] = Abc_Var2Lit( p->iPVariableStart + ( l * np ) + pi, 1 );
                 }
             }
             // printf("\n");
@@ -1552,7 +1552,7 @@ bool PexaManAddCardinalityUpper( PexaMan_t * p, const int * combi, int xp )
             {
                 if ( *( res + l ) == 1 )
                 {
-                    pList[lit++] = Abc_Var2Lit( p->i_p + ( l * np ) + pi, 0 );
+                    pList[lit++] = Abc_Var2Lit( p->iPVariableStart + ( l * np ) + pi, 0 );
                 }
             }
             if ( !sat_solver_addclause( p->pSat, pList, pList + lit ) )
@@ -1692,7 +1692,7 @@ bool AddPClausesSumOneLower( PexaMan_t * p, int i )
             {
                 if ( *( res + l ) == 1 )
                 {
-                    pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * np ) + l, 1 );
+                    pList[litSum++] = Abc_Var2Lit( p->iPVariableStart + ( ( i - p->nVars - 1 ) * np ) + l, 1 );
                 }
             }
             if ( !sat_solver_addclause( p->pSat, pList, pList + litSum ) )
@@ -1736,7 +1736,7 @@ bool AddPClausesSumOneUpper( PexaMan_t * p, int i )
             {
                 if ( *( res + l ) == 1 )
                 {
-                    pList[litSum++] = Abc_Var2Lit( p->i_p + ( ( i - p->nVars - 1 ) * np ) + l, 0 );
+                    pList[litSum++] = Abc_Var2Lit( p->iPVariableStart + ( ( i - p->nVars - 1 ) * np ) + l, 0 );
                 }
             }
             if ( !sat_solver_addclause( p->pSat, pList, pList + litSum ) )
@@ -1781,7 +1781,7 @@ bool AddPClausesSumOne( PexaMan_t * p, int i )
  */
 bool PexaManAddPClauses( PexaMan_t * p )
 {
-    p->i_p = p->iVar;
+    p->iPVariableStart = p->iVar;
     for ( int i = p->nVars + 1; i < p->nVars + p->nNodes; i++ )
     {
         if ( !AddPClausesInner( p, i ) )
@@ -1838,7 +1838,7 @@ bool AddCardinalityBddLower( PexaMan_t * p, const int * combi, int xp )
                 if ( *( res + l ) == 1 )
                 {
                     // printf("%d,",l+1);
-                    pList[lit++] = Abc_Var2Lit( p->i_p + mLen + ( l * ( mLen + np ) ) + pi + 1, 1 );
+                    pList[lit++] = Abc_Var2Lit( p->iPVariableStart + mLen + ( l * ( mLen + np ) ) + pi + 1, 1 );
                 }
             }
             // printf("\n");
@@ -1891,7 +1891,7 @@ bool AddCardinalityBddUpper( PexaMan_t * p, const int * combi, int xp )
             {
                 if ( *( res + l ) == 1 )
                 {
-                    pList[lit++] = Abc_Var2Lit( p->i_p + mLen + ( l * ( mLen + np ) ) + pi + 1, 0 );
+                    pList[lit++] = Abc_Var2Lit( p->iPVariableStart + mLen + ( l * ( mLen + np ) ) + pi + 1, 0 );
                 }
             }
             if ( !sat_solver_addclause( p->pSat, pList, pList + lit ) )

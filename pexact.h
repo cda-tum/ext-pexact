@@ -19,7 +19,7 @@
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
 
-const long long PEXACT_LONG_LONG_MAX = 9223372036854775807;
+const long long PEXACT_LLONG_MAX = 9223372036854775807;
 
 const int CONST_ZERO = 0;
 const int CONST_ONE = 1;
@@ -45,6 +45,8 @@ const int CONST_FIFTY_SIX = 56;
  * @param nNodes Internal nodes.
  * @param nObjs  Total objects (nVars inputs + nNodes internal nodes).
  * @param nWords The truth table size in 64-bit words.
+ * @param iPVariableStart Start of p variables.
+ * @param iMintermStart Start of minterm variables.
  * @param iVar The next available SAT variable.
  * @param pTruth: Truth table.
  * @param vInfo: nVars + nNodes + 1.
@@ -60,11 +62,8 @@ struct PexaMan_t_ {
     int nNodes;
     int nObjs;
     int nWords;
-    int i_p;            //start of p variables
-    int i_o;            //start of o variables
-    int o_l;            // amount of o variables
-    int i_xo;           //start of output x variables
-    int i_mintermvars;  //start of minterm variables
+    int iPVariableStart;
+    int iMintermStart;
     int iVar;
     int iVarMintermBase;
     word * pTruth;
