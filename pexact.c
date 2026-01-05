@@ -1626,11 +1626,8 @@ bool AddPClausesInner( PexaMan_t * p, int i )
     int pListP[litsize];
     int xIt = 0;
     int pTarget = 0;
+    p->iVar += litsize;  // Reserve SAT variables for this gate
     sat_solver_setnvars( p->pSat, p->iVar );
-    for ( int pi = 0; pi < litsize; pi++ )
-    {
-        pListP[pi] = 0;
-    }
     for ( int pi = 0; pi < litsize; pi++ )
     {
         pListP[pi] = Abc_Var2Lit( pStartvar++, 0 );
