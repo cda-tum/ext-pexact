@@ -286,10 +286,7 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl, bool bdd 
         return;
     }
     int xiBase = p->iVarMintermBase;
-    if ( bdd )
-    {
-        xiBase = ( p->nNodes * ( 2 * p->nVars + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
-    }
+    ( void )bdd;  // Currently unused, reserved for future differentiation
 
     for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
     {
