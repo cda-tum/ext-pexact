@@ -11,12 +11,27 @@
 #include "base/main/mainInt.h"
 #include "sat/bmc/bmc.h"
 
-#include <iostream>
+extern "C"
+{
+#include "pexact.h"
+}
+
+#include "stdio.h"
 
 namespace
 {
 const int DECIMAL_BASE = 10;
 
+/**
+ * @brief Pexact command.
+ *
+ * @details Extracts command input information, initializes Bmc_EsPar_t struct and finally executes
+ *          the exact synthesis command from pexact.c.
+ *
+ * @param pAbc Abc frame.
+ * @param argc Arg count.
+ * @param argv Arg array
+ */
 int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
     int c;
@@ -66,31 +81,39 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( -1, "Function should not have more than 4 inputs.\n" );
         return 1;
     }
-    std::cout << "Number of Inputs:" << pPars->nVars << "\n";
-    return 1;
+    return PowerExactSynthesisBase( pPars );
 usage:
     Abc_Print( -2, "usage: pexact [-I] <hex>\n" );
     Abc_Print( -2, "\t           exact synthesis of multi-input function using two-input gates\n" );
     Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", pPars->nVars );
     return 1;
 }
-
-// called during ABC startup
+/**
+ * @brief Abc startup initialization.
+ *
+ * @details Called during ABC startup.
+ *
+ * @param pAbc Abc frame.
+ */
 void Init( Abc_Frame_t * pAbc )
 {
     Cmd_CommandAdd( pAbc, "pexact", "pexact", PexactCommand, 0 );
 }
-
-// called during ABC termination
+/**
+ * @brief Destructor.
+ *
+ * @param pAbc Abc frame.
+ */
 void Destroy( Abc_Frame_t * pAbc )
 {
 }
-
-// this object should not be modified after the call to Abc_FrameAddInitializer
 Abc_FrameInitializer_t s_frameInitializer = { Init, Destroy };
-
-// register the initializer a constructor of a global object
-// called before main (and ABC startup)
+/**
+ * @brief Register struct.
+ *
+ * @details register the initializer a constructor of a global object
+ *          called before main (and ABC startup)
+ */
 struct Register_t_ {
     Register_t_()
     {
