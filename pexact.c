@@ -9,6 +9,7 @@
 
 #include "pexact.h"
 
+#include "limits.h"
 #include "math.h"
 #include "misc/extra/extra.h"
 #include "misc/util/utilTruth.h"
@@ -1050,6 +1051,26 @@ void ConvertBaseInt( int base, int value, int size, int * results )
     }
 }
 /**
+ * @brief Converting integer to base representation long.
+ *
+ * @details Converting integer to base representation.
+ *
+ * @param base Base.
+ * @param value long log value.
+ * @param size Size of the result array.
+ * @param results Result array.
+ */
+void ConvertBaseIntLong( int base, long long value, int size, int * results )
+{
+    int r;
+    for ( int i = 0; i < size; i++ )
+    {
+        r = value % base;
+        results[i] = r;
+        value = value / base;
+    }
+}
+/**
  * @brief Adding mux encoding.
  *
  * @details Adds a multiplexer encoding to CNF SAT encoding.
@@ -1403,10 +1424,10 @@ bool CalculateCombArray( int k, int r, CombList_t * list )
     {
         arraySingle[i] = 2 * ( i + 1 ) * ( pow( 2, k ) - ( i + 1 ) );
     }
-    for ( int i = 0; i < size; i++ )
+    for ( long long i = 0; i < size; i++ )
     {
         int res[sizeSingle];
-        ConvertBaseInt( r + 1, i, sizeSingle, res );
+        ConvertBaseIntLong( r + 1, i, sizeSingle, res );
         int sum = 0;
         int sumAct = 0;
         for ( int j = 0; j < sizeSingle; j++ )
