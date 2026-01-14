@@ -17,7 +17,7 @@
 #include "sat/cnf/cnf.h"
 
 
-const int MAJ_NOBJS = 32;  // Const0 + Const1 + nVars + nNodes
+#define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
 
 const long long PEXACT_LLONG_MAX = 9223372036854775807;
 
