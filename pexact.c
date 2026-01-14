@@ -154,7 +154,7 @@ static inline int PexaManFindFanin( PexaMan_t * p, int i, int k )
  * @brief Evaluation of truth table.
  *
  * @details Determines, based on a solution from SAT solver, if the resulting truth-table matches with the specified one. Needed for CEGAR optimization approach.
- *          Returns first mismatching minterm.
+ *          Returns first mismatching minterm. Currently not in Use.
  *
  * @param p Pexact struct.
  *
@@ -268,7 +268,7 @@ static int PexaManGetAct( PexaMan_t * p )
  * @param fCompl Parameter indicating if least gate is complemented or not.
  * @param bdd  Parameter indicating if BDD p variable encoding is used.
  */
-static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl, [[maybe_unused]] bool bdd )
+static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl, bool bdd )
 {
     if ( p->nObjs >= MAJ_NOBJS )
     {
@@ -286,7 +286,7 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl, [[maybe_u
         return;
     }
     int xiBase = p->iVarMintermBase;
-
+    ( void )bdd;  // Currently unused, reserved for future differentiation
     for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
     {
         for ( int t = 0; t < nTruth; t++ )
@@ -831,9 +831,9 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
     int fCompl = 0;
     word pTruth[16];
 
-    if ( ( pPars->nVars < 2 ) || ( pPars->nVars > CONST_TEN ) )
+    if ( ( pPars->nVars < 2 ) || ( pPars->nVars > CONST_FOUR ) )
     {
-        printf( "Error: nVars out of valid range (supported: 2..%d).\n", CONST_TEN );
+        printf( "Error: nVars out of valid range (supported: 2..%d).\n", CONST_FOUR );
         return 1;
     }
 
@@ -1017,7 +1017,7 @@ void FreeCombList( CombList_t * list )
  * @brief Evaluating P variable values.
  *
  * @details Evaluating P variable values. Iteres over solution from solver and evaluates which p-variables are matching to cardinallity constraining.
- *          Might be used for CEGAR approach. Currently not in use. Similar to PexaManEval.
+ *          Might be used for CEGAR approach. Currently not in use. Similar to PexaManEval. Currently not in Use.
  *
  * @param p Pexact struct.
  * @param combi Combinational array.
@@ -1204,13 +1204,11 @@ bool AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
     {
         pVars[pi] = pStart + ( 2 * np ) - 2 - pi;
     }
-    //printf("Adding MUX Clauses for i=%d\n",i);
     int xEnd = pow( 2, p->nVars ) - 1;
     int x = 0;
     int y = 0;
     for ( int m = 0; m < mSize; m++ )
     {
-        //printf("Adding MUX for m=%d\n",m);
         int t = y + x + 1;
         xIt = xiBase + ( CONST_THREE * ( i - p->nVars ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) );
         int m1;
@@ -1219,7 +1217,6 @@ bool AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
         {
             m1 = pVars[y + 1];
             m0 = pVars[y];
-            //printf("Adding Mux m_%d=(x_%d?p_%d:p_%d)\n",m+1,t,y+1,y);
         } else
         {
             m1 = mStart + m + xEnd;
@@ -2055,9 +2052,9 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
     int fCompl = 0;
     word pTruth[16];
     Abc_TtReadHex( pTruth, pPars->pTtStr );
-    if ( ( pPars->nVars < 2 ) || ( pPars->nVars > CONST_FIVE ) )
+    if ( ( pPars->nVars < 2 ) || ( pPars->nVars > CONST_FOUR ) )
     {
-        printf( "Error: nVars out of valid range (supported: 2..%d).\n", CONST_FIVE );
+        printf( "Error: nVars out of valid range (supported: 2..%d).\n", CONST_FOUR );
         return 1;
     }
     p = PexaManAlloc( pPars, pTruth );

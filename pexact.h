@@ -99,7 +99,7 @@ typedef struct CombList_t_ CombList_t;
 struct CombList_t_ {
     ///  Pointer to the first combination element in the list.
     Comb_t * start;
-    ///  aximum capacity of the list.
+    ///  Capacity of the list.
     int len;
     /// Current length of the list.
     int length;
