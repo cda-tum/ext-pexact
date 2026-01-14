@@ -17,7 +17,7 @@
 #include "sat/cnf/cnf.h"
 
 
-#define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
+const int MAJ_NOBJS = 32;  // Const0 + Const1 + nVars + nNodes
 
 const long long PEXACT_LLONG_MAX = 9223372036854775807;
 
@@ -34,75 +34,74 @@ const int CONST_TEN = 10;
 const int CONST_NINETY_SIX = 96;
 const int CONST_FIFTY_SIX = 56;
 
+
+typedef struct PexaMan_t_ PexaMan_t;
 /**
  * @brief pexact struct.
  *
  * @details
  * Containing SAT solver, starting index of variables and parameters
- *
- * @param pPars Parameters.
- * @param nVars Inputs.
- * @param nNodes Internal nodes.
- * @param nObjs  Total objects (nVars inputs + nNodes internal nodes).
- * @param nWords The truth table size in 64-bit words.
- * @param iPVariableStart Start of p variables.
- * @param iMintermStart Start of minterm variables.
- * @param iVar The next available SAT variable.
- * @param pTruth: Truth table.
- * @param vInfo: nVars + nNodes + 1.
- * @param VarMarks: Variable marks.
- * @param VarVals: Values of the first nVars variables.
- * @param vOutList: Output vars.
- * @param pSat: SAT solver.
  */
-typedef struct PexaMan_t_ PexaMan_t;
 struct PexaMan_t_ {
+    /// Parameters
     Bmc_EsPar_t * pPars;
+    /// Inputs
     int nVars;
+    /// Internal nodes
     int nNodes;
+    /// Total objects (nVars inputs + nNodes internal nodes)
     int nObjs;
+    /// The truth table size in 64-bit words
     int nWords;
+    /// Start of p variables
     int iPVariableStart;
-    int iMintermStart;
+    /// The next available SAT variable
     int iVar;
+    /// Start of minterm variables
     int iVarMintermBase;
+    /// Truth table.
     word * pTruth;
+    /// nVars + nNodes + 1.
     Vec_Wrd_t * vInfo;
+    /// Variable marks.
     int VarMarks[MAJ_NOBJS][2][MAJ_NOBJS];
+    /// Values of the first nVars variables
     int VarVals[MAJ_NOBJS];
+    /// Output vars
     Vec_Wec_t * vOutList;
+    /// SAT solver
     sat_solver * pSat;
 };
+
+typedef struct Comb_t_ Comb_t;
 /**
  * @brief Combination element.
  *
  * @details Combination element storing combinations with their internal data.
- *
- * @param act Switching activity.
- * @param r Number of nodes.
- * @param combi Combination array.
- * @param next Pointer to next combination element.
  */
-typedef struct Comb_t_ Comb_t;
 struct Comb_t_ {
+    /// Switching activity
     int act;
+    /// Number of nodes
     int r;
+    /// Combination array
     int * combi;
+    /// Pointer to next combination element
     Comb_t * next;
 };
+
+typedef struct CombList_t_ CombList_t;
 /**
  * @brief Combination priority list.
  *
  * @details Combination list storing certain combinations with their internal data.
- *
- * @param start Pointer to the first combination element in the list.
- * @param len Maximum capacity of the list.
- * @param length Current length of the list.
  */
-typedef struct CombList_t_ CombList_t;
 struct CombList_t_ {
+    ///  Pointer to the first combination element in the list.
     Comb_t * start;
+    ///  aximum capacity of the list.
     int len;
+    /// Current length of the list.
     int length;
 };
 

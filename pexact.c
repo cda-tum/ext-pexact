@@ -266,9 +266,9 @@ static int PexaManGetAct( PexaMan_t * p )
  *
  * @param p Pexact struct.
  * @param fCompl Parameter indicating if least gate is complemented or not.
- * @param bdd  Parameter indicating if bdd p variable encoding is used.
+ * @param bdd  Parameter indicating if BDD p variable encoding is used.
  */
-static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl, bool bdd )
+static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl, [[maybe_unused]] bool bdd )
 {
     if ( p->nObjs >= MAJ_NOBJS )
     {
@@ -286,7 +286,6 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl, bool bdd 
         return;
     }
     int xiBase = p->iVarMintermBase;
-    ( void )bdd;  // Currently unused, reserved for future differentiation
 
     for ( int i = 0; ( i < p->nVars ) && ( i < p->nObjs ); i++ )
     {
@@ -339,7 +338,7 @@ static void PexaManPrintSolutionTruthTable( PexaMan_t * p, int fCompl, bool bdd 
  *
  * @param p Pexact struct.
  * @param fCompl Parameter indicating if least gate is complemented or not.
- * @param bdd  Parameter indicating if bdd p variable encoding is used.
+ * @param bdd  Parameter indicating if BDD p variable encoding is used.
  */
 static void PexaManPrintSolution( PexaMan_t * p, int fCompl, bool bdd )
 {
@@ -391,7 +390,9 @@ static void PexaManPrintSolution( PexaMan_t * p, int fCompl, bool bdd )
  * @param pList List variables.
  * @param pList2 List variables.
  *
- * @return Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfInpUniq( PexaMan_t * p, int nList, int pList[MAJ_NOBJS], int pList2[2] )
 {
@@ -417,12 +418,14 @@ static bool AddCnfInpUniq( PexaMan_t * p, int nList, int pList[MAJ_NOBJS], int p
  * @details Adding constraints to encoding that reduces overall search space. Inner helper function of AddCnfSymBreaking.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
+ * @param i Gate Iteration variable.
  * @param j Iteration variable over all objects(nVars inputs + nNodes internal nodes).
- * @param k Gate input iteration variable.
+ * @param k Gate input Iteration variable.
  * @param pList2 List variables.
  *
- * @return Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfSymBreakingInner( PexaMan_t * p, int i, int j, int k, int pList2[2] )
 {
@@ -447,11 +450,13 @@ static bool AddCnfSymBreakingInner( PexaMan_t * p, int i, int j, int k, int pLis
  * @details Adding constraints to encoding that reduces overall search space.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
- * @param k Gate input iteration variable.
+ * @param i Gate Iteration variable.
+ * @param k Gate input Iteration variable.
  * @param pList2 List variables.
  *
- * @return  Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfSymBreaking( PexaMan_t * p, int i, int k, int pList2[2] )
 {
@@ -475,11 +480,13 @@ static bool AddCnfSymBreaking( PexaMan_t * p, int i, int k, int pList2[2] )
  *
  * @param p Pexact struct.
  * @param fOnlyAnd Least gate is inverted.
- * @param i Gate iteration variable.
- * @param k Gate input iteration variable.
+ * @param i Gate Iteration variable.
+ * @param k Gate input Iteration variable.
  * @param pList List variables.
  *
- * @return Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int pList[MAJ_NOBJS] )
 {
@@ -513,9 +520,11 @@ static bool AddCnfTwoInputFunc( PexaMan_t * p, int fOnlyAnd, int i, int pList[MA
  * @details Adding constraints to encoding that ensure that each output shall be used.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
+ * @param i Gate Iteration variable.
  *
- * @return  Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfStartOutUsed( PexaMan_t * p )
 {
@@ -539,11 +548,13 @@ static bool AddCnfStartOutUsed( PexaMan_t * p )
  *
  * @param p Pexact struct.
  * @param fOnlyAnd Least gate is inverted.
- * @param i Gate iteration variable.
+ * @param i Gate Iteration variable.
  * @param pList List variables.
  * @param pList2 List variables.
  *
- * @return Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pList2[2], int fOnlyAnd )
 {
@@ -594,7 +605,9 @@ static bool AddCnfStartInner( PexaMan_t * p, int i, int pList[MAJ_NOBJS], int pL
  * @param p Pexact struct.
  * @param fOnlyAnd Least gate is inverted.
  *
- * @return Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
 {
@@ -623,11 +636,13 @@ static bool PexaManAddCnfStart( PexaMan_t * p, int fOnlyAnd )
  * @details Inner function of AddCnfFaninCon. Constraining which output value a gate i has for which values of input.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
- * @param k Truth table iteration variable 0,...,3.
- * @param j All Objects(inputs+gates) iteration variable.
+ * @param i Gate Iteration variable.
+ * @param k Truth table Iteration variable 0,...,3.
+ * @param j All Objects(inputs+gates) Iteration variable.
  *
- * @return  Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfFaninConInner( PexaMan_t * p, int i, int k, int j )
 {
@@ -660,9 +675,11 @@ static bool AddCnfFaninConInner( PexaMan_t * p, int i, int k, int j )
  * @details Constraining which output value a gate i has for which values of input.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
+ * @param i Gate Iteration variable.
  *
- * @return  Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfFaninCon( PexaMan_t * p, int i )
 {
@@ -689,10 +706,12 @@ static bool AddCnfFaninCon( PexaMan_t * p, int i )
  * @details Helper function for AddCnfNodeFunc functionality constraints.
  *
  * @param p Pexact struct.
- * @param i Minterm iteration variable.
- * @param n Gate iteration variable.
+ * @param i Minterm Iteration variable.
+ * @param n Gate Iteration variable.
  *
- * @return  Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfNodeFuncInner( PexaMan_t * p, int i, int n )
 {
@@ -731,10 +750,12 @@ static bool AddCnfNodeFuncInner( PexaMan_t * p, int i, int n )
  * @details Constraining which output value a gate i has depending on the functionality variables(AND,OR,XOR).
  *
  * @param p Pexact struct.
- * @param iMint Minterm iteration variable.
- * @param i Gate iteration variable.
+ * @param iMint Minterm Iteration variable.
+ * @param i Gate Iteration variable.
  *
- * @return  Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool AddCnfNodeFunc( PexaMan_t * p, int iMint, int i )
 {
@@ -760,9 +781,11 @@ static bool AddCnfNodeFunc( PexaMan_t * p, int iMint, int i )
  *          Including fanin connectivity and gate functionality.
  *
  * @param p Pexact struct.
- * @param iMint Minterm iteration variable.
+ * @param iMint Minterm Iteration variable.
  *
- * @return Returns 0 if error during encoding occurs.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 static bool PexaManAddCnf( PexaMan_t * p, int iMint )
 {
@@ -871,21 +894,25 @@ int PowerExactSynthesisBase( Bmc_EsPar_t * pPars )
     return 1;
 }
 /**
- * @brief Adding and sorting combination to priority list.
+ * @brief Adding and sorting Combination to priority list.
  *
- * @details adding combination to priority list sorted by activity and number of gates.
+ * @details adding Combination to priority list sorted by activity and number of gates.
  *
  * @param act Switching activity.
  * @param r Gate count.
  * @param combi Combinational array.
  * @param list Combination list.
+ *
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * list )
 {
     int len = list->len;
     if ( len != combiLen )
     {
-        printf( "Error: combination length mismatch.\n" );
+        printf( "Error: Combination length mismatch.\n" );
         return 0;
     }
     Comb_t * node = ( Comb_t * )malloc( sizeof( Comb_t ) );
@@ -938,16 +965,16 @@ bool AddCombi( int act, int r, const int * combi, int combiLen, CombList_t * lis
     return 1;
 }
 /**
- * @brief Remove first element from combination list.
+ * @brief Remove first element from Combination list.
  *
- * @details removing first element from combination list.
+ * @details removing first element from Combination list.
  *
  * @param act Switching activity.
  * @param r Gate count.
  * @param combi Combinational array.
  * @param list Combination list.
  *
- * @return  Returns pointer to removed combination.
+ * @return  Returns pointer to removed Combination.
  */
 Comb_t * PopComb( CombList_t * list )
 {
@@ -967,33 +994,35 @@ Comb_t * PopComb( CombList_t * list )
     return node;
 }
 /**
- * @brief Deallocate combinational list.
+ * @brief Deallocate Combination list.
  *
- * @details Deallocating all elements in the combination list.
+ * @details Deallocating all elements in the Combination list.
  *
- * @param list Combination list.
+ * @param list Combination list to be deallocated. Will be `free`d.
  */
 void FreeCombList( CombList_t * list )
 {
     while ( list->length > 0 )
     {
         Comb_t * node = PopComb( list );
-        if ( node )
+        if ( node == NULL )
         {
-            free( node->combi );
-            free( node );
+            break;
         }
+        free( node->combi );
+        free( node );
     }
 }
 /**
  * @brief Evaluating P variable values.
  *
- * @details Evaluating P variable values. Used for CEGAR flow.
+ * @details Evaluating P variable values. Iteres over solution from solver and evaluates which p-variables are matching to cardinallity constraining.
+ *          Might be used for CEGAR approach. Currently not in use. Similar to PexaManEval.
  *
- * @param p Pexact struct..
+ * @param p Pexact struct.
  * @param combi Combinational array.
  *
- * @return Returns -1 if combination matches solution, otherwise returns index of first mismatch.
+ * @return Returns -1 if Combination matches solution, otherwise returns index of first mismatch.
  */
 int PexaManEvalPVariablesBdd( PexaMan_t * p, const int * combi )
 {
@@ -1027,14 +1056,28 @@ int PexaManEvalPVariablesBdd( PexaMan_t * p, const int * combi )
     return -1;
 }
 /**
- * @brief Converting integer to base representation.
+ * @brief Converting base representation of integer.
  *
- * @details Converting integer to base representation.
+ * @details Converting integer to given base representation. Helper function to enumerate all Combinations of p-variable cardinallitys for a given amount of gates r.
+ *
+ *
+ * @example For r=2 gates and k=2 inputs we have to represent integers in base 3.
+ *          Amount of Combinations is pow( r + 1, pow( 2, k - 1 ) ) = pow( 3, 2 ) = 9
+ *          The Combinations are:                        {p0,p1}
+ *          ConvertBaseInt( 3, 0, 2, results ) results = {0,0}
+ *          ConvertBaseInt( 3, 1, 2, results ) results = {1,0}
+ *          ConvertBaseInt( 3, 2, 2, results ) results = {2,0}
+ *          ConvertBaseInt( 3, 3, 2, results ) results = {0,1}
+ *          ConvertBaseInt( 3, 4, 2, results ) results = {1,1}
+ *          ConvertBaseInt( 3, 5, 2, results ) results = {2,1}
+ *          ...
  *
  * @param base Base.
  * @param value Integer value.
  * @param size Size of the result array.
- * @param results Result array.
+ * @param results Pointer to result Combination array.
+ *
+ * @return Returns value as integer pointer to result Combination array.
  */
 void ConvertBaseInt( int base, int value, int size, int * results )
 {
@@ -1050,11 +1093,15 @@ void ConvertBaseInt( int base, int value, int size, int * results )
  * @brief Converting integer to base representation long.
  *
  * @details Converting integer to base representation.
+ *          Helper function to enumerate all Combinations of p-variable cardinallitys for a given amount of gates r.
+ *          Similar to ConvertBaseInt but for long values.
  *
  * @param base Base.
  * @param value long log value.
  * @param size Size of the result array.
  * @param results Result array.
+ *
+ * @return Returns value as integer pointer to result Combination array.
  */
 void ConvertBaseIntLong( int base, long long value, int size, int * results )
 {
@@ -1077,7 +1124,9 @@ void ConvertBaseIntLong( int base, long long value, int size, int * results )
  * @param i1 high child.
  * @param i0 low child.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddMuxEncoding( PexaMan_t * p, int o, int c, int i1, int i0 )
 {
@@ -1113,16 +1162,18 @@ bool AddMuxEncoding( PexaMan_t * p, int o, int c, int i1, int i0 )
     return 1;
 }
 /**
- * @brief Adding bdd P variable clauses inner function.
+ * @brief Adding BDD P variable clauses inner function.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding
  *          Inner function for PexaManAddPClausesBdd. Creates MUX CNF clauses.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
- * @param mSize Amount of m variables for bdd.
+ * @param i Gate Iteration variable.
+ * @param mSize Amount of m variables for BDD.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
 {
@@ -1189,17 +1240,19 @@ bool AddPClausesBddInner( PexaMan_t * p, int i, int mSize, int xiBase )
     return 1;
 }
 /**
- * @brief Adding bdd P variable clauses sanity constraints upper bound.
+ * @brief Adding BDD P variable clauses sanity constraints upper bound.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding
  *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate is fulfilled.
  *          Constraints upper bound.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
- * @param mSize Amount of m variables for bdd.
+ * @param i Gate Iteration variable.
+ * @param mSize Amount of m variables for BDD.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddPClausesBddSumOneUpper( PexaMan_t * p, int i, int j, int mSize )
 {
@@ -1231,17 +1284,19 @@ bool AddPClausesBddSumOneUpper( PexaMan_t * p, int i, int j, int mSize )
     return 1;
 }
 /**
- * @brief Adding bdd P variable clauses sanity constraints lower bound.
+ * @brief Adding BDD P variable clauses sanity constraints lower bound.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding
  *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate is fulfilled.
  *          Constraints lower bound.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
- * @param mSize Amount of m variables for bdd.
+ * @param i Gate Iteration variable.
+ * @param mSize Amount of m variables for BDD.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddPClausesBddSumOneLower( PexaMan_t * p, int i, int j, int mSize )
 {
@@ -1275,16 +1330,18 @@ bool AddPClausesBddSumOneLower( PexaMan_t * p, int i, int j, int mSize )
     return 1;
 }
 /**
- * @brief Adding bdd P variable clauses sanity constraints.
+ * @brief Adding BDD P variable clauses sanity constraints.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding
  *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate is fulfilled.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable.
- * @param mSize Amount of m variables for bdd.
+ * @param i Gate Iteration variable.
+ * @param mSize Amount of m variables for BDD.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddPClausesBddSumOne( PexaMan_t * p, int i, int mSize )
 {
@@ -1304,13 +1361,15 @@ bool AddPClausesBddSumOne( PexaMan_t * p, int i, int mSize )
 }
 
 /**
- * @brief Adding bdd P variable clauses.
+ * @brief Adding BDD P variable clauses.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding.
  *
  * @param p Pexact struct.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool PexaManAddPClausesBdd( PexaMan_t * p )
 {
@@ -1330,7 +1389,6 @@ bool PexaManAddPClausesBdd( PexaMan_t * p )
         {
             return 0;
         }
-        ///////////////////////////////Sum(p)=1
         if ( !AddPClausesBddSumOne( p, i, mSize ) )
         {
             return 0;
@@ -1364,11 +1422,11 @@ int CalcMaxAct( int r, int k )
 /**
  * @brief Evaluate k=4 restrictions.
  *
- * @details Calculates all combinations of switching activities for a given gate count and input size.
+ * @details Calculates all Combinations of switching activities for a given gate count and input size.
  *
  * @param res Combinational array.
  *
- * @return Returns 1 if restrictio applies.
+ * @return Returns 1 if restriction applies.
  */
 bool EvaluateRestrictions4( const int * res, int resLen )
 {
@@ -1380,9 +1438,8 @@ bool EvaluateRestrictions4( const int * res, int resLen )
     int p4 = *( res + CONST_THREE );
     int p6 = *( res + CONST_FIVE );
     int p8 = *( res + CONST_SEVEN );
-    int exep1 = ( p4 >= 2 ) | ( p8 > 1 ) | ( ( p4 >= 1 ) && ( p8 >= 1 ) ) | ( ( ( p4 >= 1 ) | ( p8 >= 1 ) ) && ( ( p2 >= 1 ) | ( p6 >= 1 ) ) );
-    int exep2 = ( *( res ) <= CONST_TEN - 2 ) && ( *( res + 1 ) <= CONST_TEN - 1 ) && ( *( res + 2 ) <= CONST_TEN - 2 ) && ( *( res + CONST_FOUR ) <= CONST_TEN - 2 ) && ( *( res + CONST_FIVE ) <= CONST_TEN - 1 ) && ( *( res + CONST_SIX ) <= CONST_TEN - 2 );
-    if ( exep1 == 1 && exep2 == 1 )
+    bool feasible = ( p4 >= 2 ) | ( p8 >= 2 ) | ( ( p4 >= 1 ) && ( p8 >= 1 ) ) | ( ( ( p4 >= 1 ) | ( p8 >= 1 ) ) && ( ( p2 >= 1 ) | ( p6 >= 1 ) ) );
+    if ( feasible )
     {
         return 1;
     }
@@ -1390,15 +1447,17 @@ bool EvaluateRestrictions4( const int * res, int resLen )
 }
 
 /**
- * @brief Calculating combinational list for given r.
+ * @brief Calculating Combinational list for given r.
  *
- * @details Calculates all combinations of switching activities for a given gate count and input size.
+ * @details Calculates all Combinations of switching activities for a given gate count and input size.
  *
  * @param k Primary input count.
  * @param r Gate count.
  * @param list Combination list.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding insertion succeeded.
+ * @retval false if adding insertion failed.
  */
 bool CalculateCombArray( int k, int r, CombList_t * list )
 {
@@ -1410,7 +1469,7 @@ bool CalculateCombArray( int k, int r, CombList_t * list )
     double sizeD = pow( r + 1, pow( 2, k - 1 ) );
     if ( sizeD > PEXACT_LLONG_MAX || sizeD < 0 )
     {
-        printf( "Error: combination array size exceeds limits for r=%d, k=%d.\n", r, k );
+        printf( "Error: Combination array size exceeds limits for r=%d, k=%d.\n", r, k );
         return 0;
     }
     long long size = pow( r + 1, pow( 2, k - 1 ) );
@@ -1463,14 +1522,16 @@ bool CalculateCombArray( int k, int r, CombList_t * list )
 /**
  * @brief Cardinality constraints insertion lower bound.
  *
- * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
+ * @details Inserts cardinality constraints for a given Combination into CNF encoding, using polynomial cardinality constraints.
  *          Lower bound.
  *
  * @param p Pexact struct.
- * @param combi combinational array.
- * @param xp iteration variable of p variables.
+ * @param combi Combinational array.
+ * @param xp Iteration variable of p variables.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool PexaManAddCardinalityLower( PexaMan_t * p, const int * combi, int xp )
 {
@@ -1498,11 +1559,9 @@ bool PexaManAddCardinalityLower( PexaMan_t * p, const int * combi, int xp )
             {
                 if ( *( res + l ) == 1 )
                 {
-                    // printf("%d,",l+1);
                     pList[lit++] = Abc_Var2Lit( p->iPVariableStart + ( l * np ) + pi, 1 );
                 }
             }
-            // printf("\n");
             if ( !sat_solver_addclause( p->pSat, pList, pList + lit ) )
             {
                 return 0;
@@ -1514,14 +1573,16 @@ bool PexaManAddCardinalityLower( PexaMan_t * p, const int * combi, int xp )
 /**
  * @brief Cardinality constraints insertion upper bounds.
  *
- * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
+ * @details Inserts cardinality constraints for a given Combination into CNF encoding, using polynomial cardinality constraints.
  *          Upper bound.
  *
  * @param p Pexact struct.
- * @param combi combinational array.
- * @param xp iteration variable of p variables.
+ * @param combi Combinational array.
+ * @param xp Iteration variable of p variables.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool PexaManAddCardinalityUpper( PexaMan_t * p, const int * combi, int xp )
 {
@@ -1563,13 +1624,15 @@ bool PexaManAddCardinalityUpper( PexaMan_t * p, const int * combi, int xp )
 /**
  * @brief Cardinality constraints insertion.
  *
- * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
+ * @details Inserts cardinality constraints for a given Combination into CNF encoding, using polynomial cardinality constraints.
  *
  * @param p Pexact struct.
- * @param combi combinational array.
- * @param xp iteration variable of p variables.
+ * @param combi Combinational array.
+ * @param xp Iteration variable of p variables.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool PexaManAddCardinality( PexaMan_t * p, const int * combi, int xp )
 {
@@ -1610,11 +1673,12 @@ int CountOne( int value, int len )
  *
  * @details Introduces naive p variable encoding to SAT CNF encoding. Helper function of PexaManAddPClauses.
  *
- *
  * @param p Pexact struct.
- * @param i Gate iteration variable
+ * @param i Gate Iteration variable
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddPClausesInner( PexaMan_t * p, int i )
 {
@@ -1660,9 +1724,11 @@ bool AddPClausesInner( PexaMan_t * p, int i )
  *          Ensures that only one p variable is satisfied.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable
+ * @param i Gate Iteration variable
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddPClausesSumOneLower( PexaMan_t * p, int i )
 {
@@ -1704,9 +1770,11 @@ bool AddPClausesSumOneLower( PexaMan_t * p, int i )
  *          Ensures that only one p variable is satisfied.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable
+ * @param i Gate Iteration variable
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddPClausesSumOneUpper( PexaMan_t * p, int i )
 {
@@ -1748,9 +1816,11 @@ bool AddPClausesSumOneUpper( PexaMan_t * p, int i )
  *          Ensures that only one p variable is satisfied.
  *
  * @param p Pexact struct.
- * @param i Gate iteration variable
+ * @param i Gate Iteration variable
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddPClausesSumOne( PexaMan_t * p, int i )
 {
@@ -1771,7 +1841,9 @@ bool AddPClausesSumOne( PexaMan_t * p, int i )
  *
  * @param p Pexact struct.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool PexaManAddPClauses( PexaMan_t * p )
 {
@@ -1792,13 +1864,15 @@ bool PexaManAddPClauses( PexaMan_t * p )
 /**
  * @brief Adds carinality constraints.
  *
- * @details Introduces cardinality constraints for bdd type encoding for p variables to SAT CNF encoding.
+ * @details Introduces cardinality constraints for BDD type encoding for p variables to SAT CNF encoding.
  *
  * @param p Pexact struct.
- * @param combi combinational array.
- * @param xp iteration variable of p variables.
+ * @param combi Combinational array.
+ * @param xp Iteration variable of p variables.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddCardinalityBddLower( PexaMan_t * p, const int * combi, int xp )
 {
@@ -1831,11 +1905,9 @@ bool AddCardinalityBddLower( PexaMan_t * p, const int * combi, int xp )
             {
                 if ( *( res + l ) == 1 )
                 {
-                    // printf("%d,",l+1);
                     pList[lit++] = Abc_Var2Lit( p->iPVariableStart + mLen + ( l * ( mLen + np ) ) + pi + 1, 1 );
                 }
             }
-            // printf("\n");
             if ( !sat_solver_addclause( p->pSat, pList, pList + lit ) )
             {
                 return 0;
@@ -1847,13 +1919,15 @@ bool AddCardinalityBddLower( PexaMan_t * p, const int * combi, int xp )
 /**
  * @brief Adds carinality constraints.
  *
- * @details Introduces cardinality constraints for bdd type encoding for p variables to SAT CNF encoding.
+ * @details Introduces cardinality constraints for BDD type encoding for p variables to SAT CNF encoding
  *
  * @param p Pexact struct.
- * @param combi combinational array.
- * @param xp iteration variable of p variables.
+ * @param combi Combinational array.
+ * @param xp Iteration variable of p variables.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool AddCardinalityBddUpper( PexaMan_t * p, const int * combi, int xp )
 {
@@ -1899,13 +1973,15 @@ bool AddCardinalityBddUpper( PexaMan_t * p, const int * combi, int xp )
 /**
  * @brief Adds carinality constraints.
  *
- * @details Introduces cardinality constraints for bdd type encoding for p variables to SAT CNF encoding.
+ * @details Introduces cardinality constraints for BDD type encoding for p variables to SAT CNF encoding.
  *
  * @param p Pexact struct.
- * @param combi combinational array.
- * @param xp iteration variable of p variables.
+ * @param combi Combinational array.
+ * @param xp Iteration variable of p variables.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, int xp )
 {
@@ -1926,10 +2002,12 @@ bool PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, int xp )
  *
  * @param pPars Input information from executed abc command.
  * @param p Pexact struct.
- * @param node combinational node.
- * @param list combinational list.
+ * @param node Combinational node.
+ * @param list Combinational list.
  *
- * @return Returns 1 if adding encoding succeeded.
+ * @return Returns status.
+ * @retval true if adding encoding succeeded.
+ * @retval false if adding encoding failed.
  */
 bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, CombList_t * list )
 {
@@ -1960,13 +2038,12 @@ bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, 
 /**
  * @brief Running exact synthesis.
  *
- * @details Running exact synthesis. Calculating logic network with least amount of gates.
- *          Iterating over gate count r. For each r checking if a solution exists. First solution
- *          corresponds to minimum sized logic network. Adds p variable constraints and cardinality constraints to identyfy
- *         switching activity optimal solution.
+ * @details Running exact synthesis. Calculating a logic network with the least amount of gates.
+ *          Iterating over gate count r. For each r, check if a solution exists. First solution
+ *          corresponds to a minimum-sized logic network. Adds p variable constraints and cardinality constraints to identify
+ *          switching activity optimal solution.
  *
  * @param pPars Input information from executed abc command.
- * @param verbose Verbosity level (0: none, 1: time info, 2: detailed info).
  *
  * @return Returns 0 if synthesis was successful.
  */
@@ -2017,7 +2094,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
             pPars->nNodes = r + 1;
             if ( !CalculateCombArray( p->nVars, r, list ) )
             {
-                printf( "Error: could not calculate combination array.\n" );
+                printf( "Error: could not calculate Combination array.\n" );
                 FreeCombList( list );
                 free( list );
                 PexaManFree( p );
@@ -2041,7 +2118,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
             }
             if ( !ExactPowerSynthesisCNF( pPars, p, node, list ) )
             {
-                printf( "Warning: CNF encoding failed for combination act=%d r=%d.\n", node->act, node->r );
+                printf( "Warning: CNF encoding failed for Combination act=%d r=%d.\n", node->act, node->r );
                 free( node->combi );
                 free( node );
                 continue;
