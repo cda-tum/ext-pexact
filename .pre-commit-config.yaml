@@ -43,13 +43,13 @@ repos:
 
   # Check for license headers
   - repo: https://github.com/emzeat/mz-lictools
-    rev: v2.8.0
+    rev: v2.9.0
     hooks:
       - id: license-tools
 
   # Clang-format the C++ part of the code base automatically
   - repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v21.1.5
+    rev: v21.1.8
     hooks:
       - id: clang-format
         types_or: [c++, c]
@@ -57,14 +57,14 @@ repos:
 
   # Format configuration files with prettier
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: v3.6.2
+    rev: v3.7.4
     hooks:
       - id: prettier
         types_or: [markdown, yaml, json]
 
   # Check for spelling
   - repo: https://github.com/crate-ci/typos
-    rev: v1.39.0
+    rev: v1
     hooks:
       - id: typos
         exclude: CITATION.cff
