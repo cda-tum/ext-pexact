@@ -1016,8 +1016,9 @@ void FreeCombList( CombList_t * list )
 /**
  * @brief Evaluating P variable values.
  *
- * @details Evaluating P variable values. Iteres over solution from solver and evaluates which p-variables are matching to cardinallity constraining.
- *          Might be used for CEGAR approach. Fimctopm PexaManEvalPVariablesBdd currently not in use. Similar to PexaManEval.
+ * @details Evaluating P variable values. Iteres over solution from solver and evaluates which p-variables are matching
+ *          to cardinallity constraining. Might be used for CEGAR approach. Fimctopm PexaManEvalPVariablesBdd currently
+ *          not in use. Similar to PexaManEval.
  *
  * @param p Pexact struct.
  * @param combi Combinational array.
@@ -1058,7 +1059,8 @@ int PexaManEvalPVariablesBdd( PexaMan_t * p, const int * combi )
 /**
  * @brief Converting base representation of integer.
  *
- * @details Converting integer to given base representation. Helper function to enumerate all combinations of p-variable cardinallitys for a given amount of gates r.
+ * @details Converting integer to given base representation. Helper function to enumerate all combinations of p-variable
+ *          cardinallitys for a given amount of gates r.
  *
  *
  * @example For r=2 gates and k=2 inputs we have to represent integers in base 3.
@@ -1160,7 +1162,7 @@ bool AddMuxEncoding( PexaMan_t * p, const int o, const int c, const int i1, cons
 /**
  * @brief Adding BDD P variable clauses inner function.
  *
- * @details Adds the P variable clauses for BDD encoding to CNF encoding
+ * @details Adds the P variable clauses for BDD encoding to CNF encoding.
  *          Inner function for PexaManAddPClausesBdd. Creates MUX CNF clauses.
  *
  * @param p Pexact struct.
@@ -1236,8 +1238,8 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
  * @brief Adding BDD P variable clauses sanity constraints upper bound.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding
- *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate is fulfilled.
- *          Constraints upper bound.
+ *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate
+ *          is fulfilled. Constraints upper bound.
  *
  * @param p Pexact struct.
  * @param i Gate iteration variable.
@@ -1280,8 +1282,8 @@ bool AddPClausesBddSumOneUpper( PexaMan_t * p, const int i, const int j, const i
  * @brief Adding BDD P variable clauses sanity constraints lower bound.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding
- *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate is fulfilled.
- *          Constraints lower bound.
+ *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate
+ *          is fulfilled. Constraints lower bound.
  *
  * @param p Pexact struct.
  * @param i Gate iteration variable.
@@ -1326,7 +1328,8 @@ bool AddPClausesBddSumOneLower( PexaMan_t * p, const int i, const int j, const i
  * @brief Adding BDD P variable clauses sanity constraints.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding
- *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate is fulfilled.
+ *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate
+ *          is fulfilled.
  *
  * @param p Pexact struct.
  * @param i Gate iteration variable.
@@ -1515,8 +1518,8 @@ bool CalculateCombArray( const int k, const int r, CombList_t * list )
 /**
  * @brief Cardinality constraints insertion lower bound.
  *
- * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
- *          Lower bound.
+ * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality
+ *          constraints. Lower bound.
  *
  * @param p Pexact struct.
  * @param combi Combinational array.
@@ -1566,8 +1569,8 @@ bool PexaManAddCardinalityLower( PexaMan_t * p, const int * combi, const int xp 
 /**
  * @brief Cardinality constraints insertion upper bounds.
  *
- * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality constraints.
- *          Upper bound.
+ * @details Inserts cardinality constraints for a given combination into CNF encoding, using polynomial cardinality
+ *          constraints. Upper bound.
  *
  * @param p Pexact struct.
  * @param combi Combinational array.
@@ -1912,7 +1915,7 @@ bool AddCardinalityBddLower( PexaMan_t * p, const int * combi, const int xp )
 /**
  * @brief Adds carinality constraints.
  *
- * @details Introduces cardinality constraints for BDD type encoding for p variables to SAT CNF encoding
+ * @details Introduces cardinality constraints for BDD type encoding for p variables to SAT CNF encoding.
  *
  * @param p Pexact struct.
  * @param combi Combinational array.
@@ -2034,8 +2037,8 @@ bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, 
  *
  * @details Running exact synthesis. Calculating a logic network with the least amount of gates.
  *          Iterating over gate count r. For each r, check if a solution exists. First solution
- *          corresponds to a minimum-sized logic network. Adds p variable constraints and cardinality constraints to identify
- *          switching activity optimal solution.
+ *          corresponds to a minimum-sized logic network. Adds p variable constraints and cardinality constraints to
+ *          identify switching activity optimal solution.
  *
  * @param pPars Input information from executed abc command.
  *
