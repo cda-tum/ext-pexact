@@ -2099,43 +2099,46 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
                 return 1;
             }
         }
-        if ( list->length > 0 && list->start->act == act )
+        if ( list->length > 0 )
         {
-            Comb_t * node = PopComb( list );
-            pPars->nNodes = node->r + 1;
-            PexaManFree( p );
-            p = PexaManAlloc( pPars, pTruth );
-            if ( p == NULL )
+            if ( list->start->act == act )
             {
-                printf( "Error: memory allocation failed for PexaMan_t.\n" );
-                free( node->combi );
-                free( node );
-                FreeCombList( list );
-                free( list );
-                return 1;
-            }
-            if ( !ExactPowerSynthesisCNF( pPars, p, node, list ) )
-            {
-                printf( "Warning: CNF encoding failed for combination act=%d r=%d.\n", node->act, node->r );
+                Comb_t * node = PopComb( list );
+                pPars->nNodes = node->r + 1;
+                PexaManFree( p );
+                p = PexaManAlloc( pPars, pTruth );
+                if ( p == NULL )
+                {
+                    printf( "Error: memory allocation failed for PexaMan_t.\n" );
+                    free( node->combi );
+                    free( node );
+                    FreeCombList( list );
+                    free( list );
+                    return 1;
+                }
+                if ( !ExactPowerSynthesisCNF( pPars, p, node, list ) )
+                {
+                    printf( "Warning: CNF encoding failed for combination act=%d r=%d.\n", node->act, node->r );
+                    free( node->combi );
+                    free( node );
+                    continue;
+                }
+                status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
+                if ( status == 1 )
+                {
+                    free( node->combi );
+                    free( node );
+                    PexaManPrintSolution( p, fCompl, true );
+                    PexaManFree( p );
+                    Abc_PrintTime( 1, "Total runtime", Abc_Clock() - clkTotal );
+                    FreeCombList( list );
+                    free( list );
+                    return 0;  // Success
+                }
                 free( node->combi );
                 free( node );
                 continue;
             }
-            status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
-            if ( status == 1 )
-            {
-                free( node->combi );
-                free( node );
-                PexaManPrintSolution( p, fCompl, true );
-                PexaManFree( p );
-                Abc_PrintTime( 1, "Total runtime", Abc_Clock() - clkTotal );
-                FreeCombList( list );
-                free( list );
-                return 0;  // Success
-            }
-            free( node->combi );
-            free( node );
-            continue;
         }
         act++;
     }
