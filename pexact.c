@@ -2146,7 +2146,6 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
             free( node );
             continue;
         }
-        act++;
     }
     FreeCombList( list );
     free( list );
