@@ -2054,6 +2054,11 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
         return 1;
     }
     p = PexaManAlloc( pPars, pTruth );
+    if ( p == NULL )
+    {
+        printf( "Error: memory allocation failed for PexaMan_t.\n" );
+        return 1;
+    }
     if ( pTruth[0] & 1 )
     {
         fCompl = 1;
