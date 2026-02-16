@@ -16,10 +16,12 @@
 #include "sat/bsat/satStore.h"
 #include "sat/cnf/cnf.h"
 
+#include <limits.h>
+
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
 
-const long long PEXACT_LLONG_MAX = 9223372036854775807;
+const long long PEXACT_LLONG_MAX = LLONG_MAX;
 
 const int CONST_ZERO = 0;
 const int CONST_ONE = 1;
