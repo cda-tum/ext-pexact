@@ -1681,14 +1681,15 @@ bool AddPClausesInner( PexaMan_t * p, const int i )
     int pStartvar = p->iVar;
     int xiBase = ( p->nNodes * ( ( 2 * p->nVars ) + p->nNodes - 1 ) ) - p->nNodes + ( CONST_THREE * p->nNodes );
     int litsize = pow( 2, p->nVars );
+    int np = pow( 2, p->nVars - 1 );
     int nCombs = pow( 2, pow( 2, p->nVars ) - 1 );
     int pList[litsize];
-    int pListP[litsize];
+    int pListP[np];
     int xIt = 0;
     int pTarget = 0;
-    p->iVar += litsize;  // Reserve SAT variables for this gate
+    p->iVar += np;  // Reserve SAT variables for this gate
     sat_solver_setnvars( p->pSat, p->iVar );
-    for ( int pi = 0; pi < litsize; pi++ )
+    for ( int pi = 0; pi < np; pi++ )
     {
         pListP[pi] = Abc_Var2Lit( pStartvar++, 0 );
     }
@@ -1701,7 +1702,7 @@ bool AddPClausesInner( PexaMan_t * p, const int i )
             pList[t - 1] = Abc_Var2Lit( xIt, ValueNthBit( m, t - 1 ) );
         }
         pTarget = CountOne( m, litsize - 1 ) - 1;
-        if ( pTarget < 0 || pTarget > ( litsize - 1 ) )
+        if ( pTarget < 0 || pTarget >= np )
         {
             return 0;
         }
