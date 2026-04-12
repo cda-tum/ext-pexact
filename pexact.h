@@ -92,37 +92,6 @@ struct PexaMan_t_ {
     int sizeMap;
 };
 
-typedef struct Comb_t_ Comb_t;
-/**
- * @brief Combination element.
- *
- * @details Combination element storing combinations with their internal data.
- */
-struct Comb_t_ {
-    /// Switching activity
-    int act;
-    /// Number of nodes
-    int r;
-    /// Combination array
-    int * combi;
-    /// Pointer to next combination element
-    Comb_t * next;
-};
-
-typedef struct CombList_t_ CombList_t;
-/**
- * @brief Combination priority list.
- *
- * @details Combination list storing certain combinations with their internal data.
- */
-struct CombList_t_ {
-    ///  Pointer to the first combination element in the list.
-    Comb_t * start;
-    ///  Capacity of the list.
-    int len;
-    /// Current length of the list.
-    int length;
-};
 
 typedef struct Comb_t_ Comb_t;
 /**
