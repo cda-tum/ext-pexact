@@ -2057,7 +2057,6 @@ DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
     DdNode * o = Cudd_ReadLogicZero( manager );
     Cudd_Ref( o );
 
-    int firstFlag = 0;
 
     for ( int i = 0; i < nCombs; i++ )
     {
@@ -2070,10 +2069,9 @@ DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
 
         if ( sum == n )
         {
-            DdNode * and_node = Cudd_ReadOne( manager );
-            Cudd_Ref( and_node );
+            DdNode * andNode = Cudd_ReadOne( manager );
+            Cudd_Ref( andNode );
 
-            int firstFlag2 = 0;
 
             for ( int nR = 0; nR < r; nR++ )
             {
@@ -2084,27 +2082,25 @@ DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
                     DdNode * var = Cudd_bddIthVar( manager, ( nR * nP ) + np );
                     Cudd_Ref( var );
 
-                    DdNode * tmp_and = Cudd_bddAnd( manager, and_node, var );
-                    Cudd_Ref( tmp_and );
+                    DdNode * tmpAnd = Cudd_bddAnd( manager, andNode, var );
+                    Cudd_Ref( tmpAnd );
 
                     // Alte Referenzen aufräumen
-                    Cudd_RecursiveDeref( manager, and_node );
+                    Cudd_RecursiveDeref( manager, andNode );
                     Cudd_RecursiveDeref( manager, var );
 
-                    and_node = tmp_and;
-                    firstFlag2 = 1;
+                    andNode = tmpAnd;
                 }
             }
 
             // Jetzt das Ergebnis der AND-Kette mit dem globalen OR verknüpfen
-            DdNode * tmp_or = Cudd_bddOr( manager, o, and_node );
-            Cudd_Ref( tmp_or );
+            DdNode * tmpOr = Cudd_bddOr( manager, o, andNode );
+            Cudd_Ref( tmpOr );
 
             Cudd_RecursiveDeref( manager, o );
-            Cudd_RecursiveDeref( manager, and_node );
+            Cudd_RecursiveDeref( manager, andNode );
 
-            o = tmp_or;
-            firstFlag = 1;
+            o = tmpOr;
         }
     }
 
@@ -2243,21 +2239,21 @@ DdNode * CalculateBddCuddSmallerThanMin(
         DdNode * var = Cudd_bddIthVar( dd, i );
         // Cudd_bddIthVar liefert einen Knoten ohne Ref-Erhöhung,
         // wir brauchen aber in Ref für bddOr
-        DdNode * next_any = Cudd_bddOr( dd, anyVariableActive, var );
-        Cudd_Ref( next_any );
+        DdNode * nextAny = Cudd_bddOr( dd, anyVariableActive, var );
+        Cudd_Ref( nextAny );
         Cudd_RecursiveDeref( dd, anyVariableActive );
-        anyVariableActive = next_any;
+        anyVariableActive = nextAny;
     }
 
     // 3. Verknüpfe das Ergebnis mit der Not-All-Zero Bedingung
-    DdNode * final_res = Cudd_bddAnd( dd, orNode, anyVariableActive );
-    Cudd_Ref( final_res );
+    DdNode * finalRes = Cudd_bddAnd( dd, orNode, anyVariableActive );
+    Cudd_Ref( finalRes );
 
     // Aufräumen der Zwischenschritte
     Cudd_RecursiveDeref( dd, orNode );
     Cudd_RecursiveDeref( dd, anyVariableActive );
 
-    return final_res;
+    return finalRes;
 }
 
 void AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
