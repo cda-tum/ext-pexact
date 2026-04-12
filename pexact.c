@@ -1211,7 +1211,7 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
         xIt = xiBase + ( CONST_THREE * ( i - p->nVars ) ) + ( ( t - 1 ) * ( CONST_THREE * p->nNodes ) );
         int m1;
         int m0;
-        if ( x == xEnd - 1 )
+        if ( x == xEnd - 1 && ( y + 1 ) < ( ( 2 * np ) - 2 ) )
         {
             m1 = pVars[y + 1];
             m0 = pVars[y];
