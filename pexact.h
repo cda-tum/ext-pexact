@@ -22,8 +22,6 @@
 
 #include <limits.h>
 
-#include <limits.h>
-
 
 #define MAJ_NOBJS 32  // Const0 + Const1 + nVars + nNodes
 
