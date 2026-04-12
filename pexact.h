@@ -10,11 +10,15 @@
 #ifndef PEXACT_H
 #define PEXACT_H
 
+
 #include "misc/extra/extra.h"
 #include "misc/util/utilTruth.h"
 #include "sat/bmc/bmc.h"
 #include "sat/bsat/satStore.h"
 #include "sat/cnf/cnf.h"
+// Cudd BDD library includes after the ABC includes to avoid macro conflicts
+#include "bdd/cudd/cudd.h"
+#include "bdd/cudd/cuddInt.h"
 
 #include <limits.h>
 
@@ -35,6 +39,13 @@ const int CONST_TEN = 10;
 
 const int CONST_NINETY_SIX = 96;
 const int CONST_FIFTY_SIX = 56;
+
+typedef struct MAP_np_r_t_ MAP_np_r_t;
+struct MAP_np_r_t_ {
+    int n_p;
+    int r;
+    int var;
+};
 
 
 typedef struct PexaMan_t_ PexaMan_t;
@@ -73,6 +84,12 @@ struct PexaMan_t_ {
     Vec_Wec_t * vOutList;
     /// SAT solver
     sat_solver * pSat;
+    /// BDD manager
+    DdManager * dd;
+    // vector of MAP_np_r_t
+    MAP_np_r_t * pMap;
+    // size of pMap
+    int sizeMap;
 };
 
 typedef struct Comb_t_ Comb_t;
@@ -109,5 +126,7 @@ struct CombList_t_ {
 
 int PowerExactSynthesisBase( Bmc_EsPar_t * pPars );
 int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars );
+int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars );
+int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, int stepSize );
 
 #endif
