@@ -21,6 +21,7 @@ extern "C"
 namespace
 {
 const int DECIMAL_BASE = 10;
+const int STEPSIZE_75 = 75;
 
 /**
  * @brief Pexact command.
@@ -81,7 +82,7 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( -1, "Function should not have more than 4 inputs.\n" );
         return 1;
     }
-    return PexaManExactPowerSynthesisBasePowerBDDBiary( pPars, 75 );
+    return PexaManExactPowerSynthesisBasePowerBDDBiary( pPars, STEPSIZE_75 );
 usage:
     Abc_Print( -2, "usage: pexact [-I] <hex>\n" );
     Abc_Print( -2, "\t           exact synthesis of multi-input function using two-input gates\n" );

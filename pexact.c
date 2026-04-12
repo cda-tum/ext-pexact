@@ -1381,7 +1381,7 @@ bool PexaManAddPClausesBdd( PexaMan_t * p )
     mSize = fak;
     p->iPVariableStart = p->iVar;
     // reserverve space for mSize * p->nNodes entries
-    p->pMap = ( MAP_np_r_t * )malloc( sizeof( MAP_np_r_t ) * mSize * ( p->nNodes - 1 ) );
+    p->pMap = ( MapNpR_t * )malloc( sizeof( MapNpR_t ) * mSize * ( p->nNodes - 1 ) );
     p->sizeMap = np * ( p->nNodes - 1 );
     for ( int i = p->nVars + 1; i < p->nVars + p->nNodes; i++ )
     {
@@ -2504,8 +2504,8 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 
     // Cleanup
     free( nodeVar );
-    free( col.nodes );
-    free( col.index );
+    free( ( void * )col.nodes );
+    free( ( void * )col.index );
 }
 
 

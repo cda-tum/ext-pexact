@@ -40,8 +40,8 @@ const int CONST_TEN = 10;
 const int CONST_NINETY_SIX = 96;
 const int CONST_FIFTY_SIX = 56;
 
-typedef struct MAP_np_r_t_ MAP_np_r_t;
-struct MAP_np_r_t_ {
+typedef struct MapNpR_t_ MapNpR_t;
+struct MapNpR_t_ {
     int n_p;
     int r;
     int var;
@@ -86,8 +86,8 @@ struct PexaMan_t_ {
     sat_solver * pSat;
     /// BDD manager
     DdManager * dd;
-    // vector of MAP_np_r_t
-    MAP_np_r_t * pMap;
+    // vector of MapNpR_t
+    MapNpR_t * pMap;
     // size of pMap
     int sizeMap;
 };
