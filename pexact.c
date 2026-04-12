@@ -2371,13 +2371,9 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 
         // Debug Prints wie gewünscht
         int pi = 0;
-        int rVal = 0;
-        int npVal = 0;
         if ( nodeIdx < p->sizeMap )
         {
             pi = p->pMap[nodeIdx].var;
-            rVal = p->pMap[nodeIdx].r;
-            npVal = p->pMap[nodeIdx].n_p;
         }
 
         DdNode * nodeT = Cudd_E( node );
