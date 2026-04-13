@@ -2564,73 +2564,86 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
  * @retval true if encoding succeeded.
  * @retval false if encoding failed.
  */
-bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, const int * nodeVar, const int i, const int litConst0Raw, const int litConst1Raw )
+bool ExaManAddCardClausesCuddInner(
+    PexaMan_t * p,
+    const BddCollect_t * col,
+    const int * nodeVar,
+    const int i,
+    const int litConst0Raw,
+    const int litConst1Raw )
 {
     DdNode * node = col->nodes[i];
     int nodeIdx = node->index;
 
-    int pi = 0;
-    if ( nodeIdx < p->sizeMap && p->pMap != NULL && nodeIdx >= 0 )
+    int muxSelVar = 0;
+    if ( p->pMap != NULL && nodeIdx >= 0 && nodeIdx < p->sizeMap )
     {
-        pi = p->pMap[nodeIdx].var;
+        muxSelVar = p->pMap[nodeIdx].var;
     }
 
-    DdNode * nodeTraw = Cudd_T( node );
-    DdNode * nodeEraw = Cudd_E( node );
-    DdNode * nodeT = Cudd_Regular( nodeTraw );
-    DdNode * nodeE = Cudd_Regular( nodeEraw );
-    int compT = Cudd_IsComplement( nodeTraw ) ? 1 : 0;
-    int compE = Cudd_IsComplement( nodeEraw ) ? 1 : 0;
+    DdNode * tRaw = Cudd_T( node );
+    DdNode * eRaw = Cudd_E( node );
 
-    int child1Var = -1;
-    int child0Var = -1;
+    DdNode * tReg = Cudd_Regular( tRaw );
+    DdNode * eReg = Cudd_Regular( eRaw );
+
+    int tCompl = Cudd_IsComplement( tRaw ) ? 1 : 0;
+    int eCompl = Cudd_IsComplement( eRaw ) ? 1 : 0;
+
+    int tVar = -1;
+    int eVar = -1;
 
     for ( int j = 0; j < col->size; j++ )
     {
-        if ( col->nodes[j] == nodeT )
+        if ( col->nodes[j] == tReg )
         {
-            child1Var = nodeVar[j];
+            tVar = nodeVar[j];
         }
-        if ( col->nodes[j] == nodeE )
+        if ( col->nodes[j] == eReg )
         {
-            child0Var = nodeVar[j];
+            eVar = nodeVar[j];
+        }
+        if ( tVar >= 0 && eVar >= 0 )
+        {
+            break;
         }
     }
 
-    int litChild1, litChild0;
-
-    // T child
-    if ( Cudd_IsConstant( nodeT ) )
+    int litT;
+    if ( Cudd_IsConstant( tReg ) )
     {
-        int tVal = compT ? 0 : 1;  // regular one + complemented => zero
-        litChild1 = Abc_Var2Lit( tVal ? litConst1Raw : litConst0Raw, 0 );
+        int tValue = tCompl ? 0 : 1;
+        int tConstVar = tValue ? litConst1Raw : litConst0Raw;
+        litT = Abc_Var2Lit( tConstVar, 0 );
     } else
     {
-        if ( child1Var < 0 )
+        if ( tVar < 0 )
         {
             return 0;
         }
-        litChild1 = Abc_Var2Lit( child1Var, compT );
+        litT = Abc_Var2Lit( tVar, tCompl );
     }
 
-    // E child
-    if ( Cudd_IsConstant( nodeE ) )
+    int litE;
+    if ( Cudd_IsConstant( eReg ) )
     {
-        int eVal = compE ? 0 : 1;
-        litChild0 = Abc_Var2Lit( eVal ? litConst1Raw : litConst0Raw, 0 );
+        int eValue = eCompl ? 0 : 1;
+        int eConstVar = eValue ? litConst1Raw : litConst0Raw;
+        litE = Abc_Var2Lit( eConstVar, 0 );
     } else
     {
-        if ( child0Var < 0 )
+        if ( eVar < 0 )
         {
             return 0;
         }
-        litChild0 = Abc_Var2Lit( child0Var, compE );
+        litE = Abc_Var2Lit( eVar, eCompl );
     }
 
-    if ( !AddMuxEncodingCuddLit( p, nodeVar[i], pi, litChild1, litChild0 ) )
+    if ( !AddMuxEncodingCuddLit( p, nodeVar[i], muxSelVar, litT, litE ) )
     {
         return 0;
     }
+
     return 1;
 }
 
