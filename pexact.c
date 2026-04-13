@@ -2385,7 +2385,7 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
         }
     }
 }
-void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, int * nodeVar, int i, int litConst0Raw, int litConst1Raw )
+void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int * nodeVar, int i, int litConst0Raw, int litConst1Raw )
 {
     DdNode * node = col->nodes[i];
     int nodeIdx = node->index;
@@ -2398,8 +2398,8 @@ void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, int * nod
 
     DdNode * nodeT = Cudd_E( node );
     DdNode * nodeE = Cudd_T( node );
-    int child0 = -3;
-    int child1 = -3;
+    int child0 = -CONST_THREE;
+    int child1 = -CONST_THREE;
     for ( int j = 0; j < col->size; j++ )
     {
         if ( col->nodes[j] == nodeT )
@@ -2774,10 +2774,44 @@ int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
     return 1;
 }
 
+int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaMan_t ** p, word * pTruth, int r, int * act, int * delta )
+{
+    for ( int rIt = 1; rIt < r + 1; rIt++ )
+    {
+        Comb_t node;
+        node.act = *act;
+        node.r = rIt;
+        pPars->nNodes = rIt + 1;
+        PexaManFree( *p );
+        *p = PexaManAlloc( pPars, pTruth );
+        if ( p == NULL )
+        {
+            printf( "Error: memory allocation failed for PexaMan_t.\n" );
+            return 1;
+        }
+        if ( !ExactPowerSynthesisCnfBddRange( pPars, *p, &node, *delta ) )
+        {
+            continue;
+        }
+        int status = sat_solver_solve( ( *p )->pSat, NULL, NULL, 0, 0, 0, 0 );
+        if ( status == 1 )
+        {
+            int actSolution = PexaManGetAct( *p );
+            *delta = ( actSolution - *act ) / 2;
+            printf( "Found solution for act=%d delta=%d\n", PexaManGetAct( *p ), *delta );
+            if ( *delta > 0 )
+            {
+                rIt = 1;
+                continue;
+            }
+            return 0;  // Success
+        }
+    }
+    return 1;
+}
 
 int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, int stepSize )
 {
-    int status = 0;
     abctime clkTotal = Abc_Clock();
     PexaMan_t * p;
     int fCompl = 0;
@@ -2817,44 +2851,13 @@ int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, int stepSi
             }
             pPars->nNodes = r + 1;
         }
+        int status = PexaManExactPowerSynthesisBasePowerBDDBiaryInner( pPars, &p, pTruth, r, &act, &delta );
+        if ( status == 0 )
         {
-            for ( int rIt = 1; rIt < r + 1; rIt++ )
-            {
-                // printf( "Trying combination act=%d r=%d.\n", act, rIt );
-                Comb_t node;
-                node.act = act;
-                node.r = rIt;
-                pPars->nNodes = rIt + 1;
-                PexaManFree( p );
-                p = PexaManAlloc( pPars, pTruth );
-                if ( p == NULL )
-                {
-                    printf( "Error: memory allocation failed for PexaMan_t.\n" );
-                    return 1;
-                }
-                if ( !ExactPowerSynthesisCnfBddRange( pPars, p, &node, delta ) )
-                {
-                    continue;
-                }
-
-                status = sat_solver_solve( p->pSat, NULL, NULL, 0, 0, 0, 0 );
-                if ( status == 1 )
-                {
-                    int actSolution = PexaManGetAct( p );
-                    delta = ( actSolution - act ) / 2;
-                    printf( "Found solution for act=%d delta=%d\n", PexaManGetAct( p ), delta );
-                    if ( delta > 0 )
-                    {
-                        rIt = 1;
-                        continue;
-                    }
-
-                    PexaManPrintSolution( p, fCompl, true );
-                    PexaManFree( p );
-                    Abc_PrintTime( 1, "Total runtime", Abc_Clock() - clkTotal );
-                    return 0;  // Success
-                }
-            }
+            PexaManPrintSolution( p, fCompl, true );
+            PexaManFree( p );
+            Abc_PrintTime( 1, "Total runtime", Abc_Clock() - clkTotal );
+            return 0;
         }
         act += delta;
     }
