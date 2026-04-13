@@ -2352,7 +2352,12 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
 
                 if ( found == -1 )
                 {
-                    // add node t to collection
+                    if ( c->size >= c->cap )
+                    {
+                        printf( "CRITICAL ERROR\n" );
+                        return;
+                    }
+
                     c->nodes[c->size] = t;
                     c->index[c->size] = 0;
                     cur = c->size;
@@ -2380,6 +2385,12 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
 
                 if ( found == -1 )
                 {
+                    if ( c->size >= c->cap )
+                    {
+                        printf( "CRITICAL ERROR\n" );
+                        return;
+                    }
+
                     c->nodes[c->size] = e;
                     c->index[c->size] = 0;
                     cur = c->size;
