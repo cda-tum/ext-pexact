@@ -2419,25 +2419,33 @@ static bool AddMuxEncodingCuddLit( PexaMan_t * p, int o, int c, int litI1, int l
     pList[1] = Abc_Var2Lit( o, 1 );
     pList[2] = litI1;
     if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
         return 0;
+    }
 
     pList[0] = Abc_Var2Lit( c, 1 );
     pList[1] = Abc_LitNot( litI1 );
     pList[2] = Abc_Var2Lit( o, 0 );
     if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
         return 0;
+    }
 
     pList[0] = Abc_Var2Lit( c, 0 );
     pList[1] = Abc_Var2Lit( o, 1 );
     pList[2] = litI0;
     if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
         return 0;
+    }
 
     pList[0] = Abc_Var2Lit( c, 0 );
     pList[1] = Abc_LitNot( litI0 );
     pList[2] = Abc_Var2Lit( o, 0 );
     if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
         return 0;
+    }
 
     return 1;
 }
@@ -2574,14 +2582,19 @@ bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, con
     int compT = Cudd_IsComplement( nodeTraw ) ? 1 : 0;
     int compE = Cudd_IsComplement( nodeEraw ) ? 1 : 0;
 
-    int child1Var = -1, child0Var = -1;
+    int child1Var = -1;
+    int child0Var = -1;
 
     for ( int j = 0; j < col->size; j++ )
     {
         if ( col->nodes[j] == nodeT )
+        {
             child1Var = nodeVar[j];
+        }
         if ( col->nodes[j] == nodeE )
+        {
             child0Var = nodeVar[j];
+        }
     }
 
     int litChild1, litChild0;
@@ -2594,7 +2607,9 @@ bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, con
     } else
     {
         if ( child1Var < 0 )
+        {
             return 0;
+        }
         litChild1 = Abc_Var2Lit( child1Var, compT );
     }
 
@@ -2606,7 +2621,9 @@ bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, con
     } else
     {
         if ( child0Var < 0 )
+        {
             return 0;
+        }
         litChild0 = Abc_Var2Lit( child0Var, compE );
     }
 
