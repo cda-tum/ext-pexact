@@ -2313,17 +2313,21 @@ void AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
 // }
 
 
-static int VisitChild( DdNode * child, BddCollect_t * c, int current_pos )
+static int VisitChild( DdNode * child, BddCollect_t * c )
 {
     child = Cudd_Regular( child );
     if ( Cudd_IsConstant( child ) )
+    {
         return -1;
+    }
 
     // Search for existing nodes
     for ( int i = 0; i < c->size; i++ )
     {
         if ( c->nodes[i] == child )
-            return -1;  // Bereits besucht
+        {
+            return -1;
+        }
     }
 
     // Add children
@@ -2335,10 +2339,10 @@ static int VisitChild( DdNode * child, BddCollect_t * c, int current_pos )
 
     c->nodes[c->size] = child;
     c->index[c->size] = 0;
-    int new_pos = c->size;
+    int newPos = c->size;
     c->size++;
 
-    return new_pos;
+    return newPos;
 }
 
 
@@ -2346,7 +2350,9 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
 {
     f = Cudd_Regular( f );
     if ( Cudd_IsConstant( f ) )
+    {
         return;
+    }
 
     c->nodes[0] = f;
     c->index[0] = 0;
@@ -2360,22 +2366,28 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
         if ( c->index[cur] == 0 )
         {
             c->index[cur] = 1;
-            int next = VisitChild( Cudd_T( node ), c, cur );
+            int next = VisitChild( Cudd_T( node ), c );
             if ( next >= 0 )
+            {
                 cur = next;
+            }
         } else if ( c->index[cur] == 1 )
         {
             c->index[cur] = 2;
-            int next = VisitChild( Cudd_E( node ), c, cur );
+            int next = VisitChild( Cudd_E( node ), c );
             if ( next >= 0 )
+            {
                 cur = next;
+            }
         } else
         {
             cur--;
         }
     }
 }
+// void ExaManAddCardClausesCuddInner( PexaMan_t * p, DdNode * r ){
 
+// }
 
 void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 {
