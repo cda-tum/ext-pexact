@@ -421,7 +421,7 @@ static bool AddCnfInpUniq( PexaMan_t * p, const int nList, const int pList[MAJ_N
     return 1;
 }
 /**
- * @brief Adding symmetry breaking constrains helper.
+ * @brief Adding symmetry breaking constraints helper.
  *
  * @details Adding constraints to encoding that reduces overall search space. Inner helper function of AddCnfSymBreaking.
  *
@@ -453,7 +453,7 @@ static bool AddCnfSymBreakingInner( PexaMan_t * p, const int i, const int j, con
     return 1;
 }
 /**
- * @brief Adding symmetry breaking constrains.
+ * @brief Adding symmetry breaking constraints.
  *
  * @details Adding constraints to encoding that reduces overall search space.
  *
@@ -1361,7 +1361,7 @@ bool AddPClausesBddSumOneLower( PexaMan_t * p, const int i, const int j, const i
  * @param i Gate iteration variable.
  * @param mSize Amount of m variables for BDD.
  *
- * @return @return Returns status.
+ * @return Returns status.
  * @retval true if adding encoding succeeded.
  * @retval false if adding encoding failed.
  */
@@ -2047,7 +2047,7 @@ bool PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, const int xp )
 /**
  * @brief Adds CNF Encoding.
  *
- * @details Introduces all essecary CNF Constraints into the SAT Solver.
+ * @details Introduces all necessary CNF Constraints into the SAT Solver.
  *
  * @param pPars Input information from executed abc command.
  * @param p Pexact struct.
@@ -2288,7 +2288,6 @@ static bool CalculateBddCuddSmallerThanMinInner(
             {
                 printf( "CalculateBddCuddSmallerThanMinInner failed\n" );
                 Cudd_RecursiveDeref( dd, andNode );
-                Cudd_RecursiveDeref( dd, *orNode );
                 return 0;
             }
 
@@ -2758,7 +2757,7 @@ bool ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
     // 4. Root Constraint: Enforce Root_Var = 1
     if ( rootIdx != -1 )
     {
-        int rootLit = Abc_Var2Lit( nodeVar[rootIdx], 0 );
+        int rootLit = Abc_Var2Lit( nodeVar[rootIdx], Cudd_IsComplement( r ) ? 1 : 0 );
         if ( !sat_solver_addclause( p->pSat, &rootLit, &rootLit + 1 ) )
         {
             printf( "Error adding root constraint for node %d\n", rootIdx );
@@ -3114,7 +3113,7 @@ int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
 }
 
 /**
- * @brief Inner loop for BDD-based biary activity search.
+ * @brief Inner loop for BDD-based binary activity search.
  *
  * @details Tries all gate counts for the given activity target, rebuilds the
  *          SAT instance for each attempt, and updates the activity delta after
@@ -3139,13 +3138,14 @@ int PexaManExactPowerSynthesisBasePowerBDDBinaryInner( Bmc_EsPar_t * pPars, Pexa
         node.act = *act;
         node.r = rIt;
         pPars->nNodes = rIt + 1;
-        PexaManFree( *p );
-        *p = PexaManAlloc( pPars, pTruth );
-        if ( *p == NULL )
+        PexaMan_t * next = PexaManAlloc( pPars, pTruth );
+        if ( next == NULL )
         {
             printf( "Error: memory allocation failed for PexaMan_t.\n" );
             return 1;
         }
+        PexaManFree( *p );
+        *p = next;
         if ( !ExactPowerSynthesisCnfBddRange( pPars, *p, &node, *delta ) )
         {
             continue;
@@ -3168,7 +3168,7 @@ int PexaManExactPowerSynthesisBasePowerBDDBinaryInner( Bmc_EsPar_t * pPars, Pexa
 }
 
 /**
- * @brief Running exact synthesis with BDD-based biary search over activity.
+ * @brief Running exact synthesis with BDD-based binary search over activity.
  *
  * @details Repeats BDD-based solving while adapting the activity window until
  *          a feasible solution is found or the gate limit is reached.

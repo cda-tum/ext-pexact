@@ -11,11 +11,13 @@
 #include "base/main/mainInt.h"
 #include "sat/bmc/bmc.h"
 
+
 extern "C"
 {
 #include "pexact.h"
 }
 
+#include "errno.h"
 #include "stdio.h"
 
 namespace
@@ -78,8 +80,9 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
                 Abc_Print( -1, "Command line switch \"-M\" should be followed by an integer.\n" );
                 goto usage;
             }
+            errno = 0;
             searchMode = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
-            if ( searchMode < 0 || searchMode > 2 )
+            if ( pEnd == argv[globalUtilOptind] || *pEnd != '\0' || errno == ERANGE || searchMode < 0 || searchMode > 2 )
             {
                 Abc_Print( -1, "Invalid search mode. Valid values are 0 (queue search), 1 (free search), and 2 (binary search).\n" );
                 goto usage;
