@@ -2058,7 +2058,7 @@ bool PexaManAddCardinalityBdd( PexaMan_t * p, const int * combi, const int xp )
  * @retval true if adding encoding succeeded.
  * @retval false if adding encoding failed.
  */
-bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, CombList_t * list )
+bool ExactPowerSynthesisCNF( const Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, CombList_t * list )
 {
     if ( !PexaManAddCnfStart( p, pPars->fOnlyAnd ) )
     {
@@ -2100,7 +2100,7 @@ bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, 
  *
  * @return Pointer to resulting BDD node (referenced).
  */
-DdNode * BddNOutofROptCudd( DdManager * dd, int n, int r, int np, int nP )
+DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int np, const int nP )
 {
     if ( r <= 0 )
     {
@@ -2190,7 +2190,7 @@ DdNode * BddNOutofROptCudd( DdManager * dd, int n, int r, int np, int nP )
  *
  * @return Pointer to resulting BDD node (referenced).
  */
-DdNode * BddNOutofRCudd( DdManager * dd, int n, int r, int np, int nP )
+DdNode * BddNOutofRCudd( DdManager * dd, const int n, const int r, const int np, const int nP )
 {
     if ( r <= 0 )
     {
@@ -2333,10 +2333,10 @@ static bool CalculateBddCuddSmallerThanMinInner(
  */
 DdNode * CalculateBddCuddSmallerThanMin(
     DdManager * dd,
-    PexaMan_t * p,
-    int r,
-    int act,
-    int actMin )
+    const PexaMan_t * p,
+    const int r,
+    const int act,
+    const int actMin )
 {
     int k = p->nVars;
     int nP = ( int )pow( 2, k - 1 );
@@ -2415,7 +2415,7 @@ DdNode * CalculateBddCuddSmallerThanMin(
  * @param i1 High child variable.
  * @param i0 Low child variable.
  */
-bool AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
+bool AddMuxEncodingCudd( PexaMan_t * p, const int o, const int c, const int i1, const int i0 )
 {
     int pList[CONST_THREE];
     pList[CONST_ZERO] = Abc_Var2Lit( c, 1 );
@@ -2559,7 +2559,7 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
  * @param litConst0Raw Raw SAT variable for constant 0.
  * @param litConst1Raw Raw SAT variable for constant 1.
  */
-bool ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int * nodeVar, int i, int litConst0Raw, int litConst1Raw )
+bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, const int * nodeVar, const int i, const int litConst0Raw, const int litConst1Raw )
 {
     DdNode * node = col->nodes[i];
     int nodeIdx = node->index;
@@ -2834,7 +2834,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
  * @retval true if encoding succeeded.
  * @retval false if encoding failed.
  */
-bool ExactPowerSynthesisCnfBdd( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node )
+bool ExactPowerSynthesisCnfBdd( const Bmc_EsPar_t * pPars, PexaMan_t * p, const Comb_t * node )
 {
     DdManager * dd = Cudd_Init(
         0,  // number of BDD variables initially (0 = dynamic)
@@ -2892,7 +2892,7 @@ bool ExactPowerSynthesisCnfBdd( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * nod
  * @retval true if encoding succeeded.
  * @retval false if encoding failed.
  */
-bool ExactPowerSynthesisCnfBddRange( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, int delta )
+bool ExactPowerSynthesisCnfBddRange( const Bmc_EsPar_t * pPars, PexaMan_t * p, const Comb_t * node, const int delta )
 {
     DdManager * dd = Cudd_Init(
         0,  // number of BDD variables initially (0 = dynamic)
@@ -3089,7 +3089,7 @@ int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaM
  * @return Returns 0 if synthesis was successful.
  * @retval 1 if synthesis failed or no solution was found.
  */
-int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, int stepSize )
+int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, const int stepSize )
 {
     abctime clkTotal = Abc_Clock();
     PexaMan_t * p;
