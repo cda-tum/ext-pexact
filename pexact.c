@@ -1264,7 +1264,7 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
  * @brief Adding BDD P variable clauses sanity constraints upper bound.
  *
  * @details Adds the P variable clauses for BDD encoding to CNF encoding
- *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that excty one p variable of a gate
+ *          Inner function for PexaManAddPClausesBdd. Adds constraints that ensure that exactly one p variable of a gate
  *          is fulfilled. Constraints upper bound.
  *
  * @param p Pexact struct.
@@ -1911,7 +1911,7 @@ bool PexaManAddPClauses( PexaMan_t * p )
     return 1;
 }
 /**
- * @brief Adds carinality constraints.
+ * @brief Adds cardinality constraints.
  *
  * @details Introduces cardinality constraints for BDD type encoding for p variables to SAT CNF encoding.
  *
@@ -2221,13 +2221,12 @@ DdNode * BddNOutofRCudd( DdManager * dd, const int n, const int r, const int np,
         // IF sum of current combination equals n
         if ( sum == n )
         {
-            // Initialisierung des AND-Pfades mit der ersten Variable
             int firstIdx = np;
             DdNode * var = Cudd_bddIthVar( dd, firstIdx );
             DdNode * andNode = ( comb[0] == 0 ) ? Cudd_Not( var ) : var;
             Cudd_Ref( andNode );
 
-            // Verknüpfung der restlichen r-1 Variable
+            // Initialize the AND path with the first variable
             for ( int nR = 1; nR < r; nR++ )
             {
                 int currentIdx = ( nR * nP ) + np;
@@ -3027,7 +3026,7 @@ bool ExactPowerSynthesisCnfBddRange( const Bmc_EsPar_t * pPars, PexaMan_t * p, c
 }
 
 /**
- * @brief Running exact synthesis with BDD-based biary search over activity.
+ * @brief Running exact synthesis with BDD-based binary search over activity.
  *
  * @details Uses a stepwise activity search and BDD-based CNF encoding to find an
  *          optimal solution with fewer solver iterations.
@@ -3082,7 +3081,6 @@ int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
         {
             for ( int rIt = 1; rIt < r + 1; rIt++ )
             {
-                // printf( "Trying combination act=%d r=%d.\n", act, rIt );
                 Comb_t node;
                 node.act = act;
                 node.r = rIt;
