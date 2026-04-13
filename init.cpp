@@ -35,7 +35,7 @@ int RunPexact( int searchMode, Bmc_EsPar_t * pPars )
         status = PexaManExactPowerSynthesisBasePowerBDD( pPars );
     } else if ( searchMode == 2 )
     {
-        status = PexaManExactPowerSynthesisBasePowerBDDBiary( pPars, STEPSIZE_75 );
+        status = PexaManExactPowerSynthesisBasePowerBDDBinary( pPars, STEPSIZE_75 );
     }
     return status;
 }

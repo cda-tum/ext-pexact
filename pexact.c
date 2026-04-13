@@ -2126,7 +2126,7 @@ DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int 
 
     for ( long long i = 0; i < nCombs; i++ )
     {
-        ConvertBaseInt( 2, i, r, comb );
+        ConvertBaseIntLong( 2, i, r, comb );
 
         int sum = 0;
         for ( int nR = 0; nR < r; nR++ )
@@ -2287,7 +2287,7 @@ static bool CalculateBddCuddSmallerThanMinInner(
             DdNode * tmp = BddNOutofROptCudd( dd, combi[j], r, j, nP );
             if ( tmp == Cudd_ReadLogicZero( dd ) )
             {
-                printf( "CRITICAL ERROR\n" );
+                printf( "CalculateBddCuddSmallerThanMinInner failed\n" );
                 Cudd_RecursiveDeref( dd, andNode );
                 Cudd_RecursiveDeref( dd, *orNode );
                 return 0;
@@ -2311,7 +2311,7 @@ static bool CalculateBddCuddSmallerThanMinInner(
 
 
 /**
- * * @brief Computes a BDD for the given activity window.
+ * @brief Computes a BDD for the given activity window.
  *
  * @details Enumerates all p-variable cardinality combinations for given gate count r,
  *          keeps combinations with total activity in [actMin, act] and exact gate usage,
@@ -2486,7 +2486,7 @@ static int VisitChild( DdNode * child, BddCollect_t * c )
     // Add children
     if ( c->size >= c->cap )
     {
-        printf( "CRITICAL ERROR\n" );
+        printf( "VisitChild: Collection capacity exceeded\n" );
         return -2;
     }
 
@@ -2923,6 +2923,10 @@ bool ExactPowerSynthesisCnfBdd( const Bmc_EsPar_t * pPars, PexaMan_t * p, const 
         CUDD_CACHE_SLOTS,
         0  // memory limit (0 = unlimited)
     );
+    if ( dd == NULL )
+    {
+        return 0;
+    }
     p->dd = dd;
     if ( !PexaManAddCnfStart( p, pPars->fOnlyAnd ) )
     {
@@ -2983,6 +2987,10 @@ bool ExactPowerSynthesisCnfBddRange( const Bmc_EsPar_t * pPars, PexaMan_t * p, c
         CUDD_CACHE_SLOTS,
         0  // memory limit (0 = unlimited)
     );
+    if ( dd == NULL )
+    {
+        return 0;
+    }
     p->dd = dd;
     if ( !PexaManAddCnfStart( p, pPars->fOnlyAnd ) )
     {
@@ -3125,7 +3133,7 @@ int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
  * @retval 0 if a solution was found.
  * @retval 1 if no solution was found.
  */
-int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaMan_t ** p, word * pTruth, const int r, const int * act, int * delta )
+int PexaManExactPowerSynthesisBasePowerBDDBinaryInner( Bmc_EsPar_t * pPars, PexaMan_t ** p, word * pTruth, const int r, const int * act, int * delta )
 {
     for ( int rIt = 1; rIt < r + 1; rIt++ )
     {
@@ -3173,7 +3181,7 @@ int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaM
  * @return Returns 0 if synthesis was successful.
  * @retval 1 if synthesis failed or no solution was found.
  */
-int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, const int stepSize )
+int PexaManExactPowerSynthesisBasePowerBDDBinary( Bmc_EsPar_t * pPars, const int stepSize )
 {
     abctime clkTotal = Abc_Clock();
     PexaMan_t * p;
@@ -3214,7 +3222,7 @@ int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, const int 
             }
             pPars->nNodes = r + 1;
         }
-        int status = PexaManExactPowerSynthesisBasePowerBDDBiaryInner( pPars, &p, pTruth, r, &act, &delta );
+        int status = PexaManExactPowerSynthesisBasePowerBDDBinaryInner( pPars, &p, pTruth, r, &act, &delta );
         if ( status == 0 )
         {
             PexaManPrintSolution( p, fCompl, true );

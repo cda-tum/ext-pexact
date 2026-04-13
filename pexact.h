@@ -144,6 +144,6 @@ typedef struct {
 int PowerExactSynthesisBase( Bmc_EsPar_t * pPars );
 int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars );
 int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars );
-int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, int stepSize );
+int PexaManExactPowerSynthesisBasePowerBDDBinary( Bmc_EsPar_t * pPars, int stepSize );
 
 #endif
