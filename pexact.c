@@ -1194,6 +1194,10 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
         return 0;
     }
     int pVars[( 2 * np ) - 2];
+    for ( int i = 0; i < ( 2 * np ) - 2; i++ )
+    {
+        pVars[i] = 0;
+    }
     for ( int pi = 0; pi < np; pi++ )
     {
         pVars[pi] = pStart + pi;
@@ -2277,42 +2281,116 @@ void AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
     sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
 }
 
-// Hilfsstruktur zum Sammeln
-typedef struct {
-    DdNode ** nodes;
-    int * index;
-    int size;
-    int cap;
-} BddCollect_t;
 
-static void CollectRec( DdManager * dd, DdNode * f, BddCollect_t * c )
+// static void CollectRec( DdManager * dd, DdNode * f, BddCollect_t * c )
+// {
+//     f = Cudd_Regular( f );
+//     if ( Cudd_IsConstant( f ) )
+//     {
+//         return;
+//     }
+
+//     // Sicherheits-Check gegen Buffer Overflow
+//     if ( c->size >= c->cap )
+//     {
+//         printf( "CRITICAL ERROR: BDD Nodes exceed buffer capacity (%d)!\n", c->cap );
+//         return;
+//     }
+
+//     // Prüfen, ob schon vorhanden (Zeiger-Vergleich)
+//     for ( int i = 0; i < c->size; i++ )
+//     {
+//         if ( c->nodes[i] == f )
+//         {
+//             return;
+//         }
+//     }
+
+//     c->nodes[c->size++] = f;
+
+//     CollectRec( dd, Cudd_T( f ), c );
+//     CollectRec( dd, Cudd_E( f ), c );
+}
+
+static void CollectIter( DdManager * dd, DdNode * f, BddCollect_t * c )
 {
+    int cur = 0;
+
+    // Add Root Node
     f = Cudd_Regular( f );
     if ( Cudd_IsConstant( f ) )
-    {
         return;
-    }
 
-    // Sicherheits-Check gegen Buffer Overflow
-    if ( c->size >= c->cap )
-    {
-        printf( "CRITICAL ERROR: BDD Nodes exceed buffer capacity (%d)!\n", c->cap );
-        return;
-    }
+    c->nodes[0] = f;
+    c->index[0] = 0;
+    c->size = 1;
 
-    // Prüfen, ob schon vorhanden (Zeiger-Vergleich)
-    for ( int i = 0; i < c->size; i++ )
+    while ( cur >= 0 )
     {
-        if ( c->nodes[i] == f )
+        DdNode * node = c->nodes[cur];
+
+        if ( c->index[cur] == 0 )
         {
-            return;
+            // Go to T
+            DdNode * t = Cudd_Regular( Cudd_T( node ) );
+
+            c->index[cur] = 1;
+            if ( !Cudd_IsConstant( t ) )
+            {
+                // check if t is already collected
+                int found = -1;
+                for ( int i = 0; i < c->size; i++ )
+                {
+                    if ( c->nodes[i] == t )
+                    {
+                        found = i;
+                        break;
+                    }
+                }
+
+                if ( found == -1 )
+                {
+                    // add node t to collection
+                    c->nodes[c->size] = t;
+                    c->index[c->size] = 0;
+                    cur = c->size;
+                    c->size++;
+                    continue;
+                }
+            }
+        } else if ( c->index[cur] == 1 )
+        {
+            DdNode * e = Cudd_Regular( Cudd_E( node ) );
+
+            c->index[cur] = 2;
+
+            if ( !Cudd_IsConstant( e ) )
+            {
+                int found = -1;
+                for ( int i = 0; i < c->size; i++ )
+                {
+                    if ( c->nodes[i] == e )
+                    {
+                        found = i;
+                        break;
+                    }
+                }
+
+                if ( found == -1 )
+                {
+                    c->nodes[c->size] = e;
+                    c->index[c->size] = 0;
+                    cur = c->size;
+                    c->size++;
+                    continue;
+                }
+            }
+        } else
+        {
+            // === beide Kinder fertig → backtrack ===
+            cur--;
         }
     }
-
-    c->nodes[c->size++] = f;
-
-    CollectRec( dd, Cudd_T( f ), c );
-    CollectRec( dd, Cudd_E( f ), c );
 }
 
 
@@ -2336,7 +2414,7 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
     {
         col.index[i] = -1;
     }
-    CollectRec( dd, r, &col );
+    CollectIter( dd, r, &col );
 
     // 2. SAT-Variable Mapping
     int * nodeVar = ( int * )malloc( sizeof( int ) * col.cap );

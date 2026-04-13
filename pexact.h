@@ -125,6 +125,14 @@ struct CombList_t_ {
     int length;
 };
 
+// Hilfsstruktur zum Sammeln
+typedef struct {
+    DdNode ** nodes;
+    int * index;
+    int size;
+    int cap;
+} BddCollect_t;
+
 int PowerExactSynthesisBase( Bmc_EsPar_t * pPars );
 int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars );
 int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars );
