@@ -2385,9 +2385,54 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
         }
     }
 }
-// void ExaManAddCardClausesCuddInner( PexaMan_t * p, DdNode * r ){
+void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, int * nodeVar, int i, int litConst0Raw, int litConst1Raw )
+{
+    DdNode * node = col->nodes[i];
+    int nodeIdx = node->index;
 
-// }
+    int pi = 0;
+    if ( nodeIdx < p->sizeMap )
+    {
+        pi = p->pMap[nodeIdx].var;
+    }
+
+    DdNode * nodeT = Cudd_E( node );
+    DdNode * nodeE = Cudd_T( node );
+    int tIdx = -1;
+    int eIdx = -1;
+    for ( int j = 0; j < col->size; j++ )
+    {
+        if ( col->nodes[j] == nodeT )
+        {
+            tIdx = j;
+        }
+        if ( col->nodes[j] == nodeE )
+        {
+            eIdx = j;
+        }
+    }
+    if ( Cudd_ReadLogicZero( p->dd ) == nodeT )
+    {
+        tIdx = -2;
+    }
+    if ( Cudd_ReadLogicZero( p->dd ) == nodeE )
+    {
+        eIdx = -2;
+    }
+    if ( Cudd_ReadOne( p->dd ) == nodeT )
+    {
+        tIdx = -1;
+    }
+    if ( Cudd_ReadOne( p->dd ) == nodeE )
+    {
+        eIdx = -1;
+    }
+
+    int var = nodeVar[i];
+    int child0 = eIdx >= 0 ? nodeVar[eIdx] : ( eIdx == -1 ? litConst1Raw : litConst0Raw );
+    int child1 = tIdx >= 0 ? nodeVar[tIdx] : ( tIdx == -1 ? litConst1Raw : litConst0Raw );
+    AddMuxEncodingCudd( p, var, pi, child0, child1 );
+}
 
 void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 {
@@ -2395,7 +2440,6 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
     {
         return;
     }
-    DdManager * dd = p->dd;
 
     // 1.Collect BDD Nodes
     int totalNodes = Cudd_DagSize( r );
@@ -2433,86 +2477,11 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
     int rootIdx = -1;
     for ( int i = 0; i < col.size; i++ )
     {
-        // Identifiziere Root-Knoten (normalisiert durch Cudd_Regular)
         if ( col.nodes[i] == Cudd_Regular( r ) )
         {
             rootIdx = i;
         }
-
-        DdNode * node = col.nodes[i];
-        int nodeIdx = node->index;
-
-        int pi = 0;
-        if ( nodeIdx < p->sizeMap )
-        {
-            pi = p->pMap[nodeIdx].var;
-        }
-
-        DdNode * nodeT = Cudd_E( node );
-        DdNode * nodeE = Cudd_T( node );
-        int tIdx = -1;
-        int eIdx = -1;
-        for ( int j = 0; j < col.size; j++ )
-        {
-            if ( col.nodes[j] == nodeT )
-            {
-                tIdx = j;
-            }
-            if ( col.nodes[j] == nodeE )
-            {
-                eIdx = j;
-            }
-        }
-        if ( Cudd_ReadLogicZero( dd ) == nodeT )
-        {
-            tIdx = -2;
-        }
-        if ( Cudd_ReadLogicZero( dd ) == nodeE )
-        {
-            eIdx = -2;
-        }
-        if ( Cudd_ReadOne( dd ) == nodeT )
-        {
-            tIdx = -1;
-        }
-        if ( Cudd_ReadOne( dd ) == nodeE )
-        {
-            eIdx = -1;
-        }
-
-
-        int var = nodeVar[i];
-        // ---------------------------
-        // encoding (same logic)
-        // ---------------------------
-        if ( tIdx == -2 && eIdx == -2 )
-        {
-            AddMuxEncodingCudd( p, var, pi, litConst0Raw, litConst0Raw );
-        } else if ( tIdx == -1 && eIdx == -1 )
-        {
-            AddMuxEncodingCudd( p, var, pi, litConst1Raw, litConst1Raw );
-        } else if ( tIdx == -1 && eIdx == -2 )
-        {
-            AddMuxEncodingCudd( p, var, pi, litConst0Raw, litConst1Raw );
-        } else if ( tIdx == -2 && eIdx == -1 )
-        {
-            AddMuxEncodingCudd( p, var, pi, litConst1Raw, litConst0Raw );
-        } else if ( tIdx >= 0 && eIdx >= 0 )
-        {
-            AddMuxEncodingCudd( p, var, pi, nodeVar[eIdx], nodeVar[tIdx] );
-        } else if ( tIdx >= 0 && eIdx == -1 )
-        {
-            AddMuxEncodingCudd( p, var, pi, litConst1Raw, nodeVar[tIdx] );
-        } else if ( tIdx >= 0 && eIdx == -2 )
-        {
-            AddMuxEncodingCudd( p, var, pi, litConst0Raw, nodeVar[tIdx] );
-        } else if ( tIdx == -1 && eIdx >= 0 )
-        {
-            AddMuxEncodingCudd( p, var, pi, nodeVar[eIdx], litConst1Raw );
-        } else if ( tIdx == -2 && eIdx >= 0 )
-        {
-            AddMuxEncodingCudd( p, var, pi, nodeVar[eIdx], litConst0Raw );
-        }
+        ExaManAddCardClausesCuddInner( p, &col, nodeVar, i, litConst0Raw, litConst1Raw );
     }
     // 4. Root Constraint: Enforce Root_Var = 1
     if ( rootIdx != -1 )
