@@ -125,11 +125,19 @@ struct CombList_t_ {
     int length;
 };
 
-// Hilfsstruktur zum Sammeln
+/**
+ * @brief Helping structure for BDD collection.
+ *
+ * @details Structure for collecting BDD nodes with their internal data.
+ */
 typedef struct {
+    /// BDD nodes.
     DdNode ** nodes;
+    /// node indices.
     int * index;
+    /// size of the collection.
     int size;
+    /// capacity of the collection.
     int cap;
 } BddCollect_t;
 

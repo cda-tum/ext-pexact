@@ -42,7 +42,8 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
     Bmc_EsParSetDefault( pPars );
     Extra_UtilGetoptReset();
     Abc_FrameInit( pAbc );
-    while ( ( c = Extra_UtilGetopt( argc, argv, "I" ) ) != EOF )
+    int searchMode = 0;  // Default search mode
+    while ( ( c = Extra_UtilGetopt( argc, argv, "IM" ) ) != EOF )
     {
         switch ( c )
         {
@@ -53,6 +54,20 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
                 goto usage;
             }
             pPars->nVars = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
+            globalUtilOptind++;
+            break;
+        case 'M':
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-M\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            searchMode = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
+            if ( searchMode < 0 || searchMode > 2 )
+            {
+                Abc_Print( -1, "Invalid search mode. Valid values are 0 (queue search), 1 (free search), and 2 (binary search).\n" );
+                goto usage;
+            }
             globalUtilOptind++;
             break;
         default:
@@ -82,11 +97,21 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( -1, "Function should not have more than 4 inputs.\n" );
         return 1;
     }
-    return PexaManExactPowerSynthesisBasePowerBDDBiary( pPars, STEPSIZE_75 );
+    if ( searchMode == 0 )
+    {
+        return PexaManExactPowerSynthesisBasePower( pPars );
+    } else if ( searchMode == 1 )
+    {
+        return PexaManExactPowerSynthesisBasePowerBDD( pPars );
+    } else if ( searchMode == 2 )
+    {
+        return PexaManExactPowerSynthesisBasePowerBDDBiary( pPars, STEPSIZE_75 );
+    }
 usage:
-    Abc_Print( -2, "usage: pexact [-I] <hex>\n" );
+    Abc_Print( -2, "usage: pexact [-I] [-M] <hex>\n" );
     Abc_Print( -2, "\t           exact synthesis of multi-input function using two-input gates\n" );
     Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", pPars->nVars );
+    Abc_Print( -2, "\t-M <num> : search space exploration mode 0: queue search 1: free search 2: binary search [default = 0]\n", pPars->nVars );
     return 1;
 }
 /**

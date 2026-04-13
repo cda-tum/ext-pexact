@@ -2077,7 +2077,21 @@ bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, 
     return 1;
 }
 
-
+/**
+ * @brief Builds a BDD for the constraint "exactly n out of r are active" (optimized variant).
+ *
+ * @details Enumerates all binary assignments of length r, selects those with Hamming weight n,
+ *          builds one conjunction per valid assignment, and combines them with OR.
+ *          Variables are mapped with offset np and stride nP.
+ *
+ * @param manager CUDD manager.
+ * @param n Required number of active variables.
+ * @param r Number of variables in the group.
+ * @param np Offset of the p-variable class.
+ * @param nP Total number of p-variable classes per gate.
+ *
+ * @return Pointer to resulting BDD node (referenced).
+ */
 DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
 {
     int comb[r];
@@ -2137,6 +2151,22 @@ DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
     return o;
 }
 
+
+/**
+ * @brief Builds a BDD for the constraint "exactly n out of r are active".
+ *
+ * @details Enumerates all binary assignments of length r, constructs one product term
+ *          (including positive/negative phases) for each assignment with Hamming weight n,
+ *          and accumulates all terms with OR.
+ *
+ * @param dd CUDD manager.
+ * @param n Required number of active variables.
+ * @param r Number of variables in the group.
+ * @param np Offset of the p-variable class.
+ * @param nP Total number of p-variable classes per gate.
+ *
+ * @return Pointer to resulting BDD node (referenced).
+ */
 DdNode * BddNOutofRCudd( DdManager * dd, int n, int r, int np, int nP )
 {
     int * comb = ( int * )malloc( sizeof( int ) * r );
@@ -2192,6 +2222,22 @@ DdNode * BddNOutofRCudd( DdManager * dd, int n, int r, int np, int nP )
 }
 
 
+/**
+ * @brief Computes BDD for activity window and excludes all-zero assignment.
+ *
+ * @details Enumerates all p-variable cardinality combinations for given gate count r,
+ *          keeps combinations with total activity in [actMin, act] and exact gate usage,
+ *          builds corresponding BDD terms, OR-combines them, and finally ANDs with a
+ *          "not-all-zero" condition over all involved BDD variables.
+ *
+ * @param dd CUDD manager.
+ * @param p Pexact struct.
+ * @param r Gate count used in combination enumeration.
+ * @param act Upper activity bound.
+ * @param actMin Lower activity bound.
+ *
+ * @return Pointer to resulting BDD node (referenced).
+ */
 DdNode * CalculateBddCuddSmallerThanMin(
     DdManager * dd,
     PexaMan_t * p,
@@ -2258,8 +2304,6 @@ DdNode * CalculateBddCuddSmallerThanMin(
     free( combi );
     free( wP );
 
-    // 2. Erzeuge das "Not-All-Zero" BDD (Inverses der Null-Lösung)
-    // Das entspricht: (x0 | x1 | x2 | ... | xN)
     DdNode * anyVariableActive = Cudd_ReadLogicZero( dd );
     Cudd_Ref( anyVariableActive );
 
@@ -2267,76 +2311,68 @@ DdNode * CalculateBddCuddSmallerThanMin(
     for ( int i = 0; i < totalVars; i++ )
     {
         DdNode * var = Cudd_bddIthVar( dd, i );
-        // Cudd_bddIthVar liefert einen Knoten ohne Ref-Erhöhung,
-        // wir brauchen aber in Ref für bddOr
         DdNode * nextAny = Cudd_bddOr( dd, anyVariableActive, var );
         Cudd_Ref( nextAny );
         Cudd_RecursiveDeref( dd, anyVariableActive );
         anyVariableActive = nextAny;
     }
 
-    // 3. Verknüpfe das Ergebnis mit der Not-All-Zero Bedingung
+
     DdNode * finalRes = Cudd_bddAnd( dd, orNode, anyVariableActive );
     Cudd_Ref( finalRes );
 
-    // Aufräumen der Zwischenschritte
     Cudd_RecursiveDeref( dd, orNode );
     Cudd_RecursiveDeref( dd, anyVariableActive );
 
     return finalRes;
 }
 
-void AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
+/**
+ * @brief Adds MUX encoding clauses without explicit error propagation.
+ *
+ * @details Inserts the four standard CNF clauses for o = (c ? i1 : i0) into the SAT solver.
+ *          This helper variant does not return a status and assumes clause insertion succeeds.
+ *
+ * @param p Pexact struct.
+ * @param o Output variable.
+ * @param c Control variable.
+ * @param i1 High child variable.
+ * @param i0 Low child variable.
+ */
+bool AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
 {
     int pList[CONST_THREE];
     pList[CONST_ZERO] = Abc_Var2Lit( c, 1 );
     pList[CONST_ONE] = Abc_Var2Lit( o, 1 );
     pList[CONST_TWO] = Abc_Var2Lit( i1, 0 );
-    sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
+    if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
+        return 0;
+    }
     pList[CONST_ZERO] = Abc_Var2Lit( c, 1 );
     pList[CONST_ONE] = Abc_Var2Lit( i1, 1 );
     pList[CONST_TWO] = Abc_Var2Lit( o, 0 );
-    sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
+    if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
+        return 0;
+    }
     pList[CONST_ZERO] = Abc_Var2Lit( c, 0 );
     pList[CONST_ONE] = Abc_Var2Lit( o, 1 );
     pList[CONST_TWO] = Abc_Var2Lit( i0, 0 );
-    sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
+    if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
+        return 0;
+    }
     pList[CONST_ZERO] = Abc_Var2Lit( c, 0 );
     pList[CONST_ONE] = Abc_Var2Lit( i0, 1 );
     pList[CONST_TWO] = Abc_Var2Lit( o, 0 );
-    sat_solver_addclause( p->pSat, pList, pList + CONST_THREE );
+    if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
+    {
+        return 0;
+    }
+    return 1;
 }
 
-
-// static void CollectRec( DdManager * dd, DdNode * f, BddCollect_t * c )
-// {
-//     f = Cudd_Regular( f );
-//     if ( Cudd_IsConstant( f ) )
-//     {
-//         return;
-//     }
-
-//     // Sicherheits-Check gegen Buffer Overflow
-//     if ( c->size >= c->cap )
-//     {
-//         printf( "CRITICAL ERROR: BDD Nodes exceed buffer capacity (%d)!\n", c->cap );
-//         return;
-//     }
-
-//     // Prüfen, ob schon vorhanden (Zeiger-Vergleich)
-//     for ( int i = 0; i < c->size; i++ )
-//     {
-//         if ( c->nodes[i] == f )
-//         {
-//             return;
-//         }
-//     }
-
-//     c->nodes[c->size++] = f;
-
-//     CollectRec( dd, Cudd_T( f ), c );
-//     CollectRec( dd, Cudd_E( f ), c );
-// }
 
 /**
  * @brief Visits one BDD child and appends it to the collection if needed.
@@ -2447,7 +2483,7 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
  * @param litConst0Raw Raw SAT variable for constant 0.
  * @param litConst1Raw Raw SAT variable for constant 1.
  */
-void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int * nodeVar, int i, int litConst0Raw, int litConst1Raw )
+bool ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int * nodeVar, int i, int litConst0Raw, int litConst1Raw )
 {
     DdNode * node = col->nodes[i];
     int nodeIdx = node->index;
@@ -2490,7 +2526,12 @@ void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int
 
     int var = nodeVar[i];
 
-    AddMuxEncodingCudd( p, var, pi, child0, child1 );
+    if ( !AddMuxEncodingCudd( p, var, pi, child0, child1 ) )
+    {
+        printf( "Error adding MUX encoding for node %d\n", i );
+        return 0;
+    }
+    return 1;
 }
 
 /**
@@ -2502,11 +2543,12 @@ void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int
  * @param p Pexact struct.
  * @param r BDD root node.
  */
-void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
+bool ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 {
     if ( r == NULL )
     {
-        return;
+        printf( "Error: BDD root is NULL.\n" );
+        return 0;
     }
 
     // 1.Collect BDD Nodes
@@ -2549,19 +2591,34 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
         {
             rootIdx = i;
         }
-        ExaManAddCardClausesCuddInner( p, &col, nodeVar, i, litConst0Raw, litConst1Raw );
+        if ( !ExaManAddCardClausesCuddInner( p, &col, nodeVar, i, litConst0Raw, litConst1Raw ) )
+        {
+            printf( "Error adding CNF clauses for bdd node %d\n", i );
+            free( nodeVar );
+            free( ( void * )col.nodes );
+            free( ( void * )col.index );
+            return 0;
+        }
     }
     // 4. Root Constraint: Enforce Root_Var = 1
     if ( rootIdx != -1 )
     {
         int rootLit = Abc_Var2Lit( nodeVar[rootIdx], 0 );
-        sat_solver_addclause( p->pSat, &rootLit, &rootLit + 1 );
+        if ( !sat_solver_addclause( p->pSat, &rootLit, &rootLit + 1 ) )
+        {
+            printf( "Error adding root constraint for node %d\n", rootIdx );
+            free( nodeVar );
+            free( ( void * )col.nodes );
+            free( ( void * )col.index );
+            return 0;
+        }
     }
 
     // Cleanup
     free( nodeVar );
     free( ( void * )col.nodes );
     free( ( void * )col.index );
+    return 1;
 }
 
 
@@ -2735,7 +2792,11 @@ bool ExactPowerSynthesisCnfBdd( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * nod
         return 0;  // no solution
     }
     // printf("BDD for act=%d r=%d has %d nodes.\n", node->act, node->r, bddNodes);
-    ExaManAddCardClausesCudd( p, f );
+    if ( !ExaManAddCardClausesCudd( p, f ) )
+    {
+        printf( "Error adding CNF clauses for BDD with act=%d r=%d.\n", node->act, node->r );
+        return 0;
+    }
     Cudd_RecursiveDeref( dd, f );
     return 1;
 }
@@ -2783,14 +2844,16 @@ bool ExactPowerSynthesisCnfBddRange( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t 
     }
     //
     DdNode * f = CalculateBddCuddSmallerThanMin( dd, p, node->r, node->act + delta, node->act );
-    printf( "BDD for act=%d-%d r=%d has %d nodes.\n", node->act, node->act + delta, node->r, Cudd_DagSize( f ) );
     int bddNodes = Cudd_DagSize( f );
     if ( bddNodes == 1 )
     {
         return 0;  // no solution
     }
-    // printf("BDD for act=%d r=%d has %d nodes.\n", node->act, node->r, bddNodes);
-    ExaManAddCardClausesCudd( p, f );
+    if ( !ExaManAddCardClausesCudd( p, f ) )
+    {
+        printf( "Error adding CNF clauses for BDD with act=%d r=%d.\n", node->act, node->r );
+        return 0;
+    }
     Cudd_RecursiveDeref( dd, f );
     return 1;
 }
@@ -2865,8 +2928,6 @@ int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
                 }
                 if ( !ExactPowerSynthesisCnfBdd( pPars, p, &node ) )
                 {
-                    // printf( "Warning: CNF encoding failed for combination act=%d r=%d.\n", node.act, node.r );
-                    // free( &node );
                     continue;
                 }
 
