@@ -1198,15 +1198,21 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
     {
         return 0;
     }
+    memset( pVars, 0, sizeof( int ) * ( ( 2 * np ) - 2 ) );
     for ( int pi = 0; pi < np; pi++ )
     {
         pVars[pi] = pStart + pi;
     }
-    for ( int pi = np; ( pi < ( 2 * np ) - 2 ) && ( pi >= 0 ); pi++ )
+    for ( int pi = np; pi < ( 2 * np ) - 2; pi++ )
     {
         pVars[pi] = pStart + ( 2 * np ) - 2 - pi;
     }
     int xEnd = ( int )pow( 2, p->nVars ) - 1;
+    if ( xEnd < 0 )
+    {
+        free( pVars );
+        return 0;
+    }
     int x = 0;
     int y = 0;
     for ( int m = 0; m < mSize; m++ )
