@@ -2071,10 +2071,6 @@ bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, 
     return 1;
 }
 
-/////////////////////
-//  CUDD BDD Magic //
-/////////////////////
-
 
 DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
 {
