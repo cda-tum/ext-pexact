@@ -2295,6 +2295,7 @@ static bool CalculateBddCuddSmallerThanMinInner(
             {
                 printf( "CRITICAL ERROR\n" );
                 Cudd_RecursiveDeref( dd, andNode );
+                Cudd_RecursiveDeref( dd, *orNode );
                 return 0;
             }
             Cudd_Ref( tmp );
@@ -2316,13 +2317,11 @@ static bool CalculateBddCuddSmallerThanMinInner(
 
 
 /**
- * @brief Computes BDD for activity window and excludes all-zero assignment.
+ * * @brief Computes a BDD for the given activity window.
  *
  * @details Enumerates all p-variable cardinality combinations for given gate count r,
  *          keeps combinations with total activity in [actMin, act] and exact gate usage,
- *          builds corresponding BDD terms, OR-combines them, and finally ANDs with a
- *          "not-all-zero" condition over all involved BDD variables.
- *
+ *          builds the corresponding BDD terms, and OR-combines them into the result.
  * @param dd CUDD manager.
  * @param p Pexact struct.
  * @param r Gate count used in combination enumeration.
@@ -2367,6 +2366,8 @@ DdNode * CalculateBddCuddSmallerThanMin(
     {
         printf( "Error: Number of combinations exceeds limits for r=%d.\n", r );
         free( combi );
+        free( wP );
+        Cudd_RecursiveDeref( dd, orNode );
         return Cudd_ReadLogicZero( dd );
     }
 
@@ -2375,7 +2376,7 @@ DdNode * CalculateBddCuddSmallerThanMin(
     {
         int sum = 0;
         int sumB = 0;
-        ConvertBaseInt( r + 1, c, nP, combi );
+        ConvertBaseIntLong( r + 1, c, nP, combi );
 
         for ( int j = 0; j < nP; j++ )
         {
@@ -2398,7 +2399,6 @@ DdNode * CalculateBddCuddSmallerThanMin(
     free( combi );
     free( wP );
 
-    Cudd_RecursiveDeref( dd, orNode );
 
     return orNode;
 }
@@ -2646,6 +2646,13 @@ bool ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
     col.cap = totalNodes + 2;
     col.nodes = ( DdNode ** )malloc( sizeof( DdNode * ) * col.cap );
     col.index = ( int * )malloc( sizeof( int ) * col.cap );
+    if ( col.nodes == NULL || col.index == NULL )
+    {
+        free( col.nodes );
+        free( col.index );
+        return 0;
+    }
+
     col.size = 0;
 
     for ( int i = 0; i < col.cap; i++ )
@@ -2656,6 +2663,12 @@ bool ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 
     // 2. SAT-Variable Mapping
     int * nodeVar = ( int * )malloc( sizeof( int ) * col.cap );
+    if ( nodeVar == NULL )
+    {
+        free( ( void * )col.nodes );
+        free( ( void * )col.index );
+        return 0;
+    }
     for ( int i = 0; i < col.size; i++ )
     {
         nodeVar[i] = p->iVar++;
@@ -2669,8 +2682,22 @@ bool ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
     // Constants variables
     int litConst0 = Abc_Var2Lit( litConst0Raw, 1 );
     int litConst1 = Abc_Var2Lit( litConst1Raw, 0 );
-    sat_solver_addclause( p->pSat, &litConst0, &litConst0 + 1 );
-    sat_solver_addclause( p->pSat, &litConst1, &litConst1 + 1 );
+    if ( !sat_solver_addclause( p->pSat, &litConst0, &litConst0 + 1 ) )
+    {
+        printf( "Error adding constant 0 clause.\n" );
+        free( nodeVar );
+        free( ( void * )col.nodes );
+        free( ( void * )col.index );
+        return 0;
+    }
+    if ( !sat_solver_addclause( p->pSat, &litConst1, &litConst1 + 1 ) )
+    {
+        printf( "Error adding constant 1 clause.\n" );
+        free( nodeVar );
+        free( ( void * )col.nodes );
+        free( ( void * )col.index );
+        return 0;
+    }
 
     // 3. Encoding Loop
     int rootIdx = -1;
