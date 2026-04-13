@@ -1193,10 +1193,10 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
     {  //restricting m1 needs to be fulfilled
         return 0;
     }
-    int pVars[( 2 * np ) - 2];
-    for ( int i = 0; i < ( 2 * np ) - 2; i++ )
+    int * pVars = ( int * )malloc( sizeof( int ) * ( ( 2 * np ) - 2 ) );
+    if ( pVars == NULL )
     {
-        pVars[i] = 0;
+        return 0;
     }
     for ( int pi = 0; pi < np; pi++ )
     {
@@ -1226,6 +1226,7 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
         }
         if ( !AddMuxEncoding( p, mStart + m, xIt, m1, m0 ) )
         {
+            free( pVars );
             return 0;
         }
         x++;
@@ -1236,6 +1237,7 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
             y++;
         }
     }
+    free( pVars );
     return 1;
 }
 /**
@@ -1401,9 +1403,13 @@ bool PexaManAddPClausesBdd( PexaMan_t * p )
     {
         for ( int l = 0; l < np - 1; l++ )
         {
-            p->pMap[( ( np - 1 ) * ( i - p->nVars - 1 ) ) + l].var = p->iPVariableStart + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1;
-            p->pMap[( ( np - 1 ) * ( i - p->nVars - 1 ) ) + l].n_p = l + 1;
-            p->pMap[( ( np - 1 ) * ( i - p->nVars - 1 ) ) + l].r = i - p->nVars - 1;
+            int idx = ( ( np - 1 ) * ( i - p->nVars - 1 ) ) + l;
+            if ( idx < p->sizeMap )
+            {
+                p->pMap[idx].var = p->iPVariableStart + ( ( i - p->nVars - 1 ) * ( np + mSize ) ) + mSize + l + 1;
+                p->pMap[idx].n_p = l + 1;
+                p->pMap[idx].r = i - p->nVars - 1;
+            }
         }
         if ( !AddPClausesBddInner( p, i, mSize, xiBase ) )
         {
