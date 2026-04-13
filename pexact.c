@@ -2108,14 +2108,20 @@ DdNode * BddNOutofROptCudd( DdManager * dd, int n, int r, int np, int nP )
         free( comb );
         return Cudd_ReadLogicZero( dd );
     }
-    int nCombs = pow( 2, r );
+    long long nCombs = ( long long )pow( 2, r );
+    if ( nCombs > PEXACT_LLONG_MAX )
+    {
+        printf( "Error: Number of combinations exceeds limits for r=%d.\n", r );
+        free( comb );
+        return Cudd_ReadLogicZero( dd );
+    }
 
     // Init Cudd database
     DdNode * o = Cudd_ReadLogicZero( dd );
     Cudd_Ref( o );
 
 
-    for ( int i = 0; i < nCombs; i++ )
+    for ( long long i = 0; i < nCombs; i++ )
     {
         ConvertBaseInt( 2, i, r, comb );
         int sum = 0;
@@ -2188,15 +2194,21 @@ DdNode * BddNOutofRCudd( DdManager * dd, int n, int r, int np, int nP )
         free( comb );
         return Cudd_ReadLogicZero( dd );
     }
-    int nCombs = ( int )pow( 2, r );
+    long long nCombs = ( long long )pow( 2, r );
+    if ( nCombs > PEXACT_LLONG_MAX )
+    {
+        printf( "Error: Number of combinations exceeds limits for r=%d.\n", r );
+        free( comb );
+        return Cudd_ReadLogicZero( dd );
+    }
 
     DdNode * o = Cudd_ReadLogicZero( dd );
     Cudd_Ref( o );
 
-    for ( int i = 0; i < nCombs; i++ )
+    for ( long long i = 0; i < nCombs; i++ )
     {
         // Generate combination for current iteration
-        ConvertBaseInt( 2, i, r, comb );
+        ConvertBaseIntLong( 2, i, r, comb );
 
         int sum = 0;
         for ( int nR = 0; nR < r; nR++ )
@@ -2342,10 +2354,16 @@ DdNode * CalculateBddCuddSmallerThanMin(
         wP[i] = 2 * ( i + 1 ) * ( ( int )pow( 2, k ) - ( i + 1 ) );
     }
 
-    int combs = ( int )pow( r + 1, nP );
+    long long combs = ( long long )pow( r + 1, nP );
+    if ( combs > PEXACT_LLONG_MAX )
+    {
+        printf( "Error: Number of combinations exceeds limits for r=%d.\n", r );
+        free( combi );
+        return Cudd_ReadLogicZero( dd );
+    }
 
     // 1. Main loop: Enumerate all combinations of p-variable assignments
-    for ( int c = 0; c < combs; c++ )
+    for ( long long c = 0; c < combs; c++ )
     {
         int sum = 0;
         int sumB = 0;
