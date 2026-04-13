@@ -2579,8 +2579,8 @@ bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, con
         pi = p->pMap[nodeIdx].var;
     }
 
-    DdNode * nodeT = Cudd_E( node );
-    DdNode * nodeE = Cudd_T( node );
+    DdNode * nodeT = Cudd_T( node );
+    DdNode * nodeE = Cudd_E( node );
     int child0 = -CONST_THREE;
     int child1 = -CONST_THREE;
     for ( int j = 0; j < col->size; j++ )
@@ -2611,7 +2611,7 @@ bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, con
 
     int var = nodeVar[i];
 
-    if ( !AddMuxEncodingCudd( p, var, pi, child0, child1 ) )
+    if ( !AddMuxEncodingCudd( p, var, pi, child1, child0 ) )
     {
         printf( "Error adding MUX encoding for node %d\n", i );
         return 0;
@@ -2878,11 +2878,13 @@ bool ExactPowerSynthesisCnfBdd( const Bmc_EsPar_t * pPars, PexaMan_t * p, const 
     int bddNodes = Cudd_DagSize( f );
     if ( bddNodes == 1 )
     {
+        Cudd_RecursiveDeref( dd, f );
         return 0;  // no solution
     }
     // printf("BDD for act=%d r=%d has %d nodes.\n", node->act, node->r, bddNodes);
     if ( !ExaManAddCardClausesCudd( p, f ) )
     {
+        Cudd_RecursiveDeref( dd, f );
         printf( "Error adding CNF clauses for BDD with act=%d r=%d.\n", node->act, node->r );
         return 0;
     }
@@ -2936,10 +2938,12 @@ bool ExactPowerSynthesisCnfBddRange( const Bmc_EsPar_t * pPars, PexaMan_t * p, c
     int bddNodes = Cudd_DagSize( f );
     if ( bddNodes == 1 )
     {
+        Cudd_RecursiveDeref( dd, f );
         return 0;  // no solution
     }
     if ( !ExaManAddCardClausesCudd( p, f ) )
     {
+        Cudd_RecursiveDeref( dd, f );
         printf( "Error adding CNF clauses for BDD with act=%d r=%d.\n", node->act, node->r );
         return 0;
     }
