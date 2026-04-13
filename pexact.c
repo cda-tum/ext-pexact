@@ -3095,7 +3095,7 @@ int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaM
         pPars->nNodes = rIt + 1;
         PexaManFree( *p );
         *p = PexaManAlloc( pPars, pTruth );
-        if ( p == NULL )
+        if ( *p == NULL )
         {
             printf( "Error: memory allocation failed for PexaMan_t.\n" );
             return 1;
