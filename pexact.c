@@ -2312,20 +2312,46 @@ void AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
 //     CollectRec( dd, Cudd_E( f ), c );
 // }
 
+
+static int VisitChild( DdNode * child, BddCollect_t * c, int current_pos )
+{
+    child = Cudd_Regular( child );
+    if ( Cudd_IsConstant( child ) )
+        return -1;
+
+    // Search for existing nodes
+    for ( int i = 0; i < c->size; i++ )
+    {
+        if ( c->nodes[i] == child )
+            return -1;  // Bereits besucht
+    }
+
+    // Add children
+    if ( c->size >= c->cap )
+    {
+        printf( "CRITICAL ERROR\n" );
+        return -2;
+    }
+
+    c->nodes[c->size] = child;
+    c->index[c->size] = 0;
+    int new_pos = c->size;
+    c->size++;
+
+    return new_pos;
+}
+
+
 static void CollectIter( DdNode * f, BddCollect_t * c )
 {
-    int cur = 0;
-
-    // Add Root Node
     f = Cudd_Regular( f );
     if ( Cudd_IsConstant( f ) )
-    {
         return;
-    }
 
     c->nodes[0] = f;
     c->index[0] = 0;
     c->size = 1;
+    int cur = 0;
 
     while ( cur >= 0 )
     {
@@ -2333,71 +2359,16 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
 
         if ( c->index[cur] == 0 )
         {
-            // Go to T
-            DdNode * t = Cudd_Regular( Cudd_T( node ) );
-
             c->index[cur] = 1;
-            if ( !Cudd_IsConstant( t ) )
-            {
-                // check if t is already collected
-                int found = -1;
-                for ( int i = 0; i < c->size; i++ )
-                {
-                    if ( c->nodes[i] == t )
-                    {
-                        found = i;
-                        break;
-                    }
-                }
-
-                if ( found == -1 )
-                {
-                    if ( c->size >= c->cap )
-                    {
-                        printf( "CRITICAL ERROR\n" );
-                        return;
-                    }
-
-                    c->nodes[c->size] = t;
-                    c->index[c->size] = 0;
-                    cur = c->size;
-                    c->size++;
-                    continue;
-                }
-            }
+            int next = VisitChild( Cudd_T( node ), c, cur );
+            if ( next >= 0 )
+                cur = next;
         } else if ( c->index[cur] == 1 )
         {
-            DdNode * e = Cudd_Regular( Cudd_E( node ) );
-
             c->index[cur] = 2;
-
-            if ( !Cudd_IsConstant( e ) )
-            {
-                int found = -1;
-                for ( int i = 0; i < c->size; i++ )
-                {
-                    if ( c->nodes[i] == e )
-                    {
-                        found = i;
-                        break;
-                    }
-                }
-
-                if ( found == -1 )
-                {
-                    if ( c->size >= c->cap )
-                    {
-                        printf( "CRITICAL ERROR\n" );
-                        return;
-                    }
-
-                    c->nodes[c->size] = e;
-                    c->index[c->size] = 0;
-                    cur = c->size;
-                    c->size++;
-                    continue;
-                }
-            }
+            int next = VisitChild( Cudd_E( node ), c, cur );
+            if ( next >= 0 )
+                cur = next;
         } else
         {
             cur--;
@@ -2459,7 +2430,6 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
         DdNode * node = col.nodes[i];
         int nodeIdx = node->index;
 
-        // Debug Prints wie gewünscht
         int pi = 0;
         if ( nodeIdx < p->sizeMap )
         {
@@ -2538,59 +2508,6 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
         int rootLit = Abc_Var2Lit( nodeVar[rootIdx], 0 );
         sat_solver_addclause( p->pSat, &rootLit, &rootLit + 1 );
     }
-
-    // ===============================
-    // 8. BDD SOLUTION EXTRACTION
-    // ===============================
-
-    // {
-    //     printf("\n--- MAPPING BDD TO PMAP STRUCTURE ---\n");
-    //     fflush(stdout);
-
-    //     DdNode *f_debug = r;
-    //     int nvars = Cudd_ReadSize(dd);
-
-    //     if (f_debug == NULL || f_debug == Cudd_ReadLogicZero(dd)) {
-    //         printf("Mapping: BDD is ZERO.\n");
-    //     } else {
-    //         DdGen *gen;
-    //         int *cube;
-    //         CUDD_VALUE_TYPE value;
-
-    //
-    //         int cube_count = 0;
-    //         Cudd_ForeachCube(dd, f_debug, gen, cube, value) {
-    //             cube_count++;
-    //             printf("\n--- Solution #%d ---\n", cube_count);
-
-    //
-    //             for (int i = 0; i < nvars; i++) {
-    //                 int bit = cube[i];
-
-    //
-    //                 if (bit == 0 || bit == 1) {
-
-    //                     // Sicherheit: Existiert dieser Index in deiner pMap?
-    //                     if (i < p->sizeMap) {
-    //                         int pi_num = p->pMap[i].var;
-    //                         int r_val  = p->pMap[i].r;
-    //                         int np_val = p->pMap[i].n_p;
-
-    //                         printf("  BDD-Index %-3d | PI=%-4d | r=%-2d | n_p=%-2d | Value=%d\n",
-    //                             i, pi_num, r_val, np_val, bit);
-    //                     } else {
-    //                         // Falls der BDD mehr Variable hat also die Map Einträge
-    //                         printf("  BDD-Index %-3d | [Nicht in pMap] | Value=%d\n", i, bit);
-    //                     }
-    //                 }
-    //             }
-    //
-    //             // break;
-    //         }
-    //     }
-    //     printf("\n--- MAPPING END ---\n");
-    //     fflush(stdout);
-    // }
 
     // Cleanup
     free( nodeVar );
