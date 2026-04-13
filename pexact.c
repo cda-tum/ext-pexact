@@ -2105,6 +2105,7 @@ DdNode * BddNOutofROptCudd( DdManager * dd, int n, int r, int np, int nP )
     int * comb = ( int * )malloc( sizeof( int ) * r );
     if ( comb == NULL )
     {
+        free( comb );
         return Cudd_ReadLogicZero( dd );
     }
     int nCombs = pow( 2, r );
@@ -2159,7 +2160,7 @@ DdNode * BddNOutofROptCudd( DdManager * dd, int n, int r, int np, int nP )
             o = tmpOr;
         }
     }
-
+    free( comb );
     return o;
 }
 
@@ -2277,7 +2278,7 @@ DdNode * CalculateBddCuddSmallerThanMin(
 
     int combs = ( int )pow( r + 1, nP );
 
-    // 1. Hauptschleife für die Kombinationen
+    // 1. Main loop: Enumerate all combinations of p-variable assignments
     for ( int c = 0; c < combs; c++ )
     {
         int sum = 0;
@@ -2304,6 +2305,8 @@ DdNode * CalculateBddCuddSmallerThanMin(
                     if ( tmp == Cudd_ReadLogicZero( dd ) )
                     {
                         printf( "CRITICAL ERROR\n" );
+                        free( combi );
+                        free( wP );
                         return Cudd_ReadLogicZero( dd );
                     }
                     Cudd_Ref( tmp );
@@ -2325,27 +2328,9 @@ DdNode * CalculateBddCuddSmallerThanMin(
     free( combi );
     free( wP );
 
-    DdNode * anyVariableActive = Cudd_ReadLogicZero( dd );
-    Cudd_Ref( anyVariableActive );
-
-    int totalVars = nP * r;
-    for ( int i = 0; i < totalVars; i++ )
-    {
-        DdNode * var = Cudd_bddIthVar( dd, i );
-        DdNode * nextAny = Cudd_bddOr( dd, anyVariableActive, var );
-        Cudd_Ref( nextAny );
-        Cudd_RecursiveDeref( dd, anyVariableActive );
-        anyVariableActive = nextAny;
-    }
-
-
-    DdNode * finalRes = Cudd_bddAnd( dd, orNode, anyVariableActive );
-    Cudd_Ref( finalRes );
-
     Cudd_RecursiveDeref( dd, orNode );
-    Cudd_RecursiveDeref( dd, anyVariableActive );
 
-    return finalRes;
+    return orNode;
 }
 
 /**
