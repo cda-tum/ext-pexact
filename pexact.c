@@ -1193,19 +1193,23 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
     {  //restricting m1 needs to be fulfilled
         return 0;
     }
-    int * pVars = ( int * )malloc( sizeof( int ) * ( ( 2 * np ) - 2 ) );
+    int pLen = ( 2 * np ) - 2;
+    int * pVars = ( int * )malloc( sizeof( int ) * pLen );
     if ( pVars == NULL )
     {
         return 0;
     }
-    memset( pVars, 0, sizeof( int ) * ( ( 2 * np ) - 2 ) );
-    for ( int pi = 0; pi < np; pi++ )
+
+    memset( pVars, 0, sizeof( int ) * pLen );
+
+    for ( int pi = 0; pi < np; ++pi )
     {
         pVars[pi] = pStart + pi;
     }
-    for ( int pi = np; pi < ( 2 * np ) - 2; pi++ )
+
+    for ( int pi = 0; pi < np - 2; ++pi )
     {
-        pVars[pi] = pStart + ( 2 * np ) - 2 - pi;
+        pVars[np + pi] = pStart + np - 2 - pi;
     }
     int xEnd = ( int )pow( 2, p->nVars ) - 1;
     if ( xEnd < 0 )
