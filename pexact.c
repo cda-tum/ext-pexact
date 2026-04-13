@@ -2310,16 +2310,18 @@ void AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
 
 //     CollectRec( dd, Cudd_T( f ), c );
 //     CollectRec( dd, Cudd_E( f ), c );
-}
+// }
 
-static void CollectIter( DdManager * dd, DdNode * f, BddCollect_t * c )
+static void CollectIter( DdNode * f, BddCollect_t * c )
 {
     int cur = 0;
 
     // Add Root Node
     f = Cudd_Regular( f );
     if ( Cudd_IsConstant( f ) )
+    {
         return;
+    }
 
     c->nodes[0] = f;
     c->index[0] = 0;
@@ -2387,7 +2389,6 @@ static void CollectIter( DdManager * dd, DdNode * f, BddCollect_t * c )
             }
         } else
         {
-            // === beide Kinder fertig → backtrack ===
             cur--;
         }
     }
@@ -2414,7 +2415,7 @@ void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
     {
         col.index[i] = -1;
     }
-    CollectIter( dd, r, &col );
+    CollectIter( r, &col );
 
     // 2. SAT-Variable Mapping
     int * nodeVar = ( int * )malloc( sizeof( int ) * col.cap );
