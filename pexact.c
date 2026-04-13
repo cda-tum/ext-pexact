@@ -117,6 +117,14 @@ static void PexaManFree( PexaMan_t * p )
     sat_solver_delete( p->pSat );
     Vec_WrdFree( p->vInfo );
     Vec_WecFree( p->vOutList );
+    if ( p->pMap != NULL )
+    {
+        free( p->pMap );
+    }
+    if ( p->dd != NULL )
+    {
+        Cudd_Quit( p->dd );
+    }
     ABC_FREE( p );
 }
 /**
@@ -2092,13 +2100,17 @@ bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, 
  *
  * @return Pointer to resulting BDD node (referenced).
  */
-DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
+DdNode * BddNOutofROptCudd( DdManager * dd, int n, int r, int np, int nP )
 {
-    int comb[r];
+    int * comb = ( int * )malloc( sizeof( int ) * r );
+    if ( comb == NULL )
+    {
+        return Cudd_ReadLogicZero( dd );
+    }
     int nCombs = pow( 2, r );
 
     // Init Cudd database
-    DdNode * o = Cudd_ReadLogicZero( manager );
+    DdNode * o = Cudd_ReadLogicZero( dd );
     Cudd_Ref( o );
 
 
@@ -2113,7 +2125,7 @@ DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
 
         if ( sum == n )
         {
-            DdNode * andNode = Cudd_ReadOne( manager );
+            DdNode * andNode = Cudd_ReadOne( dd );
             Cudd_Ref( andNode );
 
 
@@ -2123,26 +2135,26 @@ DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
                 {
                     // Variable holen (CUDD braucht hier kein Ref, wenn direkt genutzt,
                     // aber wir machen es für die Logik konsistent)
-                    DdNode * var = Cudd_bddIthVar( manager, ( nR * nP ) + np );
+                    DdNode * var = Cudd_bddIthVar( dd, ( nR * nP ) + np );
                     Cudd_Ref( var );
 
-                    DdNode * tmpAnd = Cudd_bddAnd( manager, andNode, var );
+                    DdNode * tmpAnd = Cudd_bddAnd( dd, andNode, var );
                     Cudd_Ref( tmpAnd );
 
                     // Alte Referenzen aufräumen
-                    Cudd_RecursiveDeref( manager, andNode );
-                    Cudd_RecursiveDeref( manager, var );
+                    Cudd_RecursiveDeref( dd, andNode );
+                    Cudd_RecursiveDeref( dd, var );
 
                     andNode = tmpAnd;
                 }
             }
 
             // Jetzt das Ergebnis der AND-Kette mit dem globalen OR verknüpfen
-            DdNode * tmpOr = Cudd_bddOr( manager, o, andNode );
+            DdNode * tmpOr = Cudd_bddOr( dd, o, andNode );
             Cudd_Ref( tmpOr );
 
-            Cudd_RecursiveDeref( manager, o );
-            Cudd_RecursiveDeref( manager, andNode );
+            Cudd_RecursiveDeref( dd, o );
+            Cudd_RecursiveDeref( dd, andNode );
 
             o = tmpOr;
         }
@@ -2170,6 +2182,10 @@ DdNode * BddNOutofROptCudd( DdManager * manager, int n, int r, int np, int nP )
 DdNode * BddNOutofRCudd( DdManager * dd, int n, int r, int np, int nP )
 {
     int * comb = ( int * )malloc( sizeof( int ) * r );
+    if ( comb == NULL )
+    {
+        return Cudd_ReadLogicZero( dd );
+    }
     int nCombs = ( int )pow( 2, r );
 
     DdNode * o = Cudd_ReadLogicZero( dd );
@@ -2285,6 +2301,11 @@ DdNode * CalculateBddCuddSmallerThanMin(
                 if ( combi[i] != 0 )
                 {
                     DdNode * tmp = BddNOutofROptCudd( dd, combi[i], r, i, nP );
+                    if ( tmp == Cudd_ReadLogicZero( dd ) )
+                    {
+                        printf( "CRITICAL ERROR\n" );
+                        return Cudd_ReadLogicZero( dd );
+                    }
                     Cudd_Ref( tmp );
                     DdNode * nextAnd = Cudd_bddAnd( dd, andNode, tmp );
                     Cudd_Ref( nextAnd );
