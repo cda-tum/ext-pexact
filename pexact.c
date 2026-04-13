@@ -1413,7 +1413,7 @@ bool PexaManAddPClausesBdd( PexaMan_t * p )
         printf( "Error: Map size is non-positive. mSize: %d, nNodes: %d\n", mSize, p->nNodes );
         return 0;
     }
-    p->sizeMap = np * ( p->nNodes - 1 );
+    p->sizeMap = ( np - 1 ) * ( p->nNodes - 1 );
     p->pMap = ( MapNpR_t * )malloc( sizeof( MapNpR_t ) * p->sizeMap );
     if ( p->pMap == NULL )
     {
@@ -2106,12 +2106,13 @@ DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int 
     {
         return ( n == 0 ) ? Cudd_ReadOne( dd ) : Cudd_ReadLogicZero( dd );
     }
+
     int * comb = ( int * )malloc( sizeof( int ) * r );
     if ( comb == NULL )
     {
-        free( comb );
         return Cudd_ReadLogicZero( dd );
     }
+
     long long nCombs = ( long long )pow( 2, r );
     if ( nCombs > PEXACT_LLONG_MAX )
     {
@@ -2120,14 +2121,13 @@ DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int 
         return Cudd_ReadLogicZero( dd );
     }
 
-    // Init Cudd database
     DdNode * o = Cudd_ReadLogicZero( dd );
     Cudd_Ref( o );
-
 
     for ( long long i = 0; i < nCombs; i++ )
     {
         ConvertBaseInt( 2, i, r, comb );
+
         int sum = 0;
         for ( int nR = 0; nR < r; nR++ )
         {
@@ -2139,37 +2139,31 @@ DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int 
             DdNode * andNode = Cudd_ReadOne( dd );
             Cudd_Ref( andNode );
 
-
             for ( int nR = 0; nR < r; nR++ )
             {
                 if ( comb[nR] != 0 )
                 {
-                    // Variable holen (CUDD braucht hier kein Ref, wenn direkt genutzt,
-                    // aber wir machen es für die Logik konsistent)
                     DdNode * var = Cudd_bddIthVar( dd, ( nR * nP ) + np );
                     Cudd_Ref( var );
 
                     DdNode * tmpAnd = Cudd_bddAnd( dd, andNode, var );
                     Cudd_Ref( tmpAnd );
 
-                    // Alte Referenzen aufräumen
                     Cudd_RecursiveDeref( dd, andNode );
                     Cudd_RecursiveDeref( dd, var );
-
                     andNode = tmpAnd;
                 }
             }
 
-            // Jetzt das Ergebnis der AND-Kette mit dem globalen OR verknüpfen
             DdNode * tmpOr = Cudd_bddOr( dd, o, andNode );
             Cudd_Ref( tmpOr );
 
             Cudd_RecursiveDeref( dd, o );
             Cudd_RecursiveDeref( dd, andNode );
-
             o = tmpOr;
         }
     }
+
     free( comb );
     return o;
 }
@@ -2298,7 +2292,7 @@ static bool CalculateBddCuddSmallerThanMinInner(
                 Cudd_RecursiveDeref( dd, *orNode );
                 return 0;
             }
-            Cudd_Ref( tmp );
+
             DdNode * nextAnd = Cudd_bddAnd( dd, andNode, tmp );
             Cudd_Ref( nextAnd );
             Cudd_RecursiveDeref( dd, andNode );
@@ -2342,17 +2336,16 @@ DdNode * CalculateBddCuddSmallerThanMin(
     int * wP = ( int * )malloc( sizeof( int ) * nP );
     if ( wP == NULL )
     {
-        free( wP );
         return Cudd_ReadLogicZero( dd );
     }
+
     int * combi = ( int * )malloc( sizeof( int ) * nP );
     if ( combi == NULL )
     {
         free( wP );
-        free( combi );
         return Cudd_ReadLogicZero( dd );
     }
-    int sats = 0;
+
     DdNode * orNode = Cudd_ReadLogicZero( dd );
     Cudd_Ref( orNode );
 
@@ -2371,7 +2364,6 @@ DdNode * CalculateBddCuddSmallerThanMin(
         return Cudd_ReadLogicZero( dd );
     }
 
-    // 1. Main loop: Enumerate all combinations of p-variable assignments
     for ( long long c = 0; c < combs; c++ )
     {
         int sum = 0;
@@ -2386,11 +2378,11 @@ DdNode * CalculateBddCuddSmallerThanMin(
 
         if ( sum <= act && sum >= actMin && sumB == r )
         {
-            sats++;
             if ( !CalculateBddCuddSmallerThanMinInner( dd, combi, nP, r, &orNode ) )
             {
                 free( combi );
                 free( wP );
+                Cudd_RecursiveDeref( dd, orNode );
                 return Cudd_ReadLogicZero( dd );
             }
         }
@@ -2398,10 +2390,9 @@ DdNode * CalculateBddCuddSmallerThanMin(
 
     free( combi );
     free( wP );
-
-
     return orNode;
 }
+
 
 /**
  * @brief Adds MUX encoding clauses without explicit error propagation.
