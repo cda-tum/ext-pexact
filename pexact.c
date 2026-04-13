@@ -1206,7 +1206,7 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
     {
         pVars[pi] = pStart + ( 2 * np ) - 2 - pi;
     }
-    int xEnd = pow( 2, p->nVars ) - 1;
+    int xEnd = ( int )pow( 2, p->nVars ) - 1;
     int x = 0;
     int y = 0;
     for ( int m = 0; m < mSize; m++ )
@@ -1393,12 +1393,14 @@ bool PexaManAddPClausesBdd( PexaMan_t * p )
         printf( "Error: Map size is non-positive. mSize: %d, nNodes: %d\n", mSize, p->nNodes );
         return 0;
     }
-    p->pMap = ( MapNpR_t * )malloc( sizeof( MapNpR_t ) * mSize * ( p->nNodes - 1 ) );
-    if ( p->pMap != NULL )
-    {
-        memset( p->pMap, 0, sizeof( MapNpR_t ) * p->sizeMap );
-    }
     p->sizeMap = np * ( p->nNodes - 1 );
+    p->pMap = ( MapNpR_t * )malloc( sizeof( MapNpR_t ) * p->sizeMap );
+    if ( p->pMap == NULL )
+    {
+        printf( "Error: Memory allocation failed for pMap.\n" );
+        return 0;
+    }
+    memset( p->pMap, 0, sizeof( MapNpR_t ) * p->sizeMap );
     for ( int i = p->nVars + 1; i < p->nVars + p->nNodes; i++ )
     {
         for ( int l = 0; l < np - 1; l++ )
