@@ -2414,6 +2414,11 @@ DdNode * CalculateBddCuddSmallerThanMin(
  * @param c Control variable.
  * @param i1 High child variable.
  * @param i0 Low child variable.
+ *
+ *
+ * @return Returns status.
+ * @retval true if encoding succeeded.
+ * @retval false if encoding failed.
  */
 bool AddMuxEncodingCudd( PexaMan_t * p, const int o, const int c, const int i1, const int i0 )
 {
@@ -2558,6 +2563,10 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
  * @param i Node index in the collection.
  * @param litConst0Raw Raw SAT variable for constant 0.
  * @param litConst1Raw Raw SAT variable for constant 1.
+ *
+ * @return Returns status.
+ * @retval true if encoding succeeded.
+ * @retval false if encoding failed.
  */
 bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, const int * nodeVar, const int i, const int litConst0Raw, const int litConst1Raw )
 {
@@ -2618,6 +2627,10 @@ bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, con
  *
  * @param p Pexact struct.
  * @param r BDD root node.
+ *
+ * @return Returns status.
+ * @retval true if encoding succeeded.
+ * @retval false if encoding failed.
  */
 bool ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 {
