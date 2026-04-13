@@ -3155,7 +3155,6 @@ int PexaManExactPowerSynthesisBasePowerBDDBinaryInner( Bmc_EsPar_t * pPars, Pexa
         {
             int actSolution = PexaManGetAct( *p );
             *delta = ( actSolution - *act ) / 2;
-            printf( "Found solution for act=%d delta=%d\n", PexaManGetAct( *p ), *delta );
             if ( *delta > 0 )
             {
                 rIt = 0;
