@@ -2774,7 +2774,7 @@ int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
     return 1;
 }
 
-int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaMan_t ** p, word * pTruth, int r, int * act, int * delta )
+int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaMan_t ** p, word * pTruth, const int r, const int * act, int * delta )
 {
     for ( int rIt = 1; rIt < r + 1; rIt++ )
     {
@@ -2801,7 +2801,7 @@ int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaM
             printf( "Found solution for act=%d delta=%d\n", PexaManGetAct( *p ), *delta );
             if ( *delta > 0 )
             {
-                rIt = 1;
+                rIt = 0;
                 continue;
             }
             return 0;  // Success
