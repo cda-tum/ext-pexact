@@ -2648,8 +2648,8 @@ bool ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
     col.index = ( int * )malloc( sizeof( int ) * col.cap );
     if ( col.nodes == NULL || col.index == NULL )
     {
-        free( col.nodes );
-        free( col.index );
+        free( ( void * )col.nodes );
+        free( ( void * )col.index );
         return 0;
     }
 
