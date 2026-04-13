@@ -1385,7 +1385,17 @@ bool PexaManAddPClausesBdd( PexaMan_t * p )
     mSize = fak;
     p->iPVariableStart = p->iVar;
     // reserverve space for mSize * p->nNodes entries
+    int numElements = mSize * ( p->nNodes - 1 );
+    if ( numElements <= 0 )
+    {
+        printf( "Error: Map size is non-positive. mSize: %d, nNodes: %d\n", mSize, p->nNodes );
+        return 0;
+    }
     p->pMap = ( MapNpR_t * )malloc( sizeof( MapNpR_t ) * mSize * ( p->nNodes - 1 ) );
+    if ( p->pMap != NULL )
+    {
+        memset( p->pMap, 0, sizeof( MapNpR_t ) * p->sizeMap );
+    }
     p->sizeMap = np * ( p->nNodes - 1 );
     for ( int i = p->nVars + 1; i < p->nVars + p->nNodes; i++ )
     {
@@ -2391,7 +2401,7 @@ void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int
     int nodeIdx = node->index;
 
     int pi = 0;
-    if ( nodeIdx < p->sizeMap )
+    if ( nodeIdx < p->sizeMap && p->pMap != NULL && nodeIdx >= 0 )
     {
         pi = p->pMap[nodeIdx].var;
     }
