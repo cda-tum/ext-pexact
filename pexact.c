@@ -2398,39 +2398,36 @@ void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, int * nod
 
     DdNode * nodeT = Cudd_E( node );
     DdNode * nodeE = Cudd_T( node );
-    int tIdx = -1;
-    int eIdx = -1;
+    int child0 = -3;
+    int child1 = -3;
     for ( int j = 0; j < col->size; j++ )
     {
         if ( col->nodes[j] == nodeT )
         {
-            tIdx = j;
+            child1 = nodeVar[j];
         }
         if ( col->nodes[j] == nodeE )
         {
-            eIdx = j;
+            child0 = nodeVar[j];
         }
     }
     if ( Cudd_ReadLogicZero( p->dd ) == nodeT )
     {
-        tIdx = -2;
+        child1 = litConst0Raw;
+    } else if ( Cudd_ReadOne( p->dd ) == nodeT )
+    {
+        child1 = litConst1Raw;
     }
     if ( Cudd_ReadLogicZero( p->dd ) == nodeE )
     {
-        eIdx = -2;
-    }
-    if ( Cudd_ReadOne( p->dd ) == nodeT )
+        child0 = litConst0Raw;
+    } else if ( Cudd_ReadOne( p->dd ) == nodeE )
     {
-        tIdx = -1;
-    }
-    if ( Cudd_ReadOne( p->dd ) == nodeE )
-    {
-        eIdx = -1;
+        child0 = litConst1Raw;
     }
 
     int var = nodeVar[i];
-    int child0 = eIdx >= 0 ? nodeVar[eIdx] : ( eIdx == -1 ? litConst1Raw : litConst0Raw );
-    int child1 = tIdx >= 0 ? nodeVar[tIdx] : ( tIdx == -1 ? litConst1Raw : litConst0Raw );
+
     AddMuxEncodingCudd( p, var, pi, child0, child1 );
 }
 
