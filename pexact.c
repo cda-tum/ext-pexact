@@ -2185,6 +2185,7 @@ DdNode * BddNOutofRCudd( DdManager * dd, int n, int r, int np, int nP )
     int * comb = ( int * )malloc( sizeof( int ) * r );
     if ( comb == NULL )
     {
+        free( comb );
         return Cudd_ReadLogicZero( dd );
     }
     int nCombs = ( int )pow( 2, r );
@@ -2240,6 +2241,61 @@ DdNode * BddNOutofRCudd( DdManager * dd, int n, int r, int np, int nP )
 
 
 /**
+ * @brief Adds one weighted BDD combination to the accumulating result.
+ *
+ * @details Builds the AND-chain for one selected p-variable combination, combines
+ *          it with the current OR accumulator, and handles CUDD reference counts.
+ *
+ * @param dd CUDD manager.
+ * @param combi Combination vector for the current activity class.
+ * @param nP Number of p-variable classes.
+ * @param r Gate count used in the BDD construction.
+ * @param orNode Current OR accumulator.
+ *
+ * @return Returns status.
+ * @retval true if the combination was added successfully.
+ * @retval false if BDD construction failed.
+ */
+static bool CalculateBddCuddSmallerThanMinInner(
+    DdManager * dd,
+    const int * combi,
+    const int nP,
+    const int r,
+    DdNode ** orNode )
+{
+    DdNode * andNode = Cudd_ReadOne( dd );
+    Cudd_Ref( andNode );
+
+    for ( int j = 0; j < nP; j++ )
+    {
+        if ( combi[j] != 0 )
+        {
+            DdNode * tmp = BddNOutofROptCudd( dd, combi[j], r, j, nP );
+            if ( tmp == Cudd_ReadLogicZero( dd ) )
+            {
+                printf( "CRITICAL ERROR\n" );
+                Cudd_RecursiveDeref( dd, andNode );
+                return 0;
+            }
+            Cudd_Ref( tmp );
+            DdNode * nextAnd = Cudd_bddAnd( dd, andNode, tmp );
+            Cudd_Ref( nextAnd );
+            Cudd_RecursiveDeref( dd, andNode );
+            Cudd_RecursiveDeref( dd, tmp );
+            andNode = nextAnd;
+        }
+    }
+
+    DdNode * nextOr = Cudd_bddOr( dd, *orNode, andNode );
+    Cudd_Ref( nextOr );
+    Cudd_RecursiveDeref( dd, *orNode );
+    Cudd_RecursiveDeref( dd, andNode );
+    *orNode = nextOr;
+    return 1;
+}
+
+
+/**
  * @brief Computes BDD for activity window and excludes all-zero assignment.
  *
  * @details Enumerates all p-variable cardinality combinations for given gate count r,
@@ -2265,8 +2321,18 @@ DdNode * CalculateBddCuddSmallerThanMin(
     int k = p->nVars;
     int nP = ( int )pow( 2, k - 1 );
     int * wP = ( int * )malloc( sizeof( int ) * nP );
+    if ( wP == NULL )
+    {
+        free( wP );
+        return Cudd_ReadLogicZero( dd );
+    }
     int * combi = ( int * )malloc( sizeof( int ) * nP );
-
+    if ( combi == NULL )
+    {
+        free( wP );
+        free( combi );
+        return Cudd_ReadLogicZero( dd );
+    }
     int sats = 0;
     DdNode * orNode = Cudd_ReadLogicZero( dd );
     Cudd_Ref( orNode );
@@ -2294,34 +2360,12 @@ DdNode * CalculateBddCuddSmallerThanMin(
         if ( sum <= act && sum >= actMin && sumB == r )
         {
             sats++;
-            DdNode * andNode = Cudd_ReadOne( dd );
-            Cudd_Ref( andNode );
-
-            for ( int i = 0; i < nP; i++ )
+            if ( !CalculateBddCuddSmallerThanMinInner( dd, combi, nP, r, &orNode ) )
             {
-                if ( combi[i] != 0 )
-                {
-                    DdNode * tmp = BddNOutofROptCudd( dd, combi[i], r, i, nP );
-                    if ( tmp == Cudd_ReadLogicZero( dd ) )
-                    {
-                        printf( "CRITICAL ERROR\n" );
-                        free( combi );
-                        free( wP );
-                        return Cudd_ReadLogicZero( dd );
-                    }
-                    Cudd_Ref( tmp );
-                    DdNode * nextAnd = Cudd_bddAnd( dd, andNode, tmp );
-                    Cudd_Ref( nextAnd );
-                    Cudd_RecursiveDeref( dd, andNode );
-                    Cudd_RecursiveDeref( dd, tmp );
-                    andNode = nextAnd;
-                }
+                free( combi );
+                free( wP );
+                return Cudd_ReadLogicZero( dd );
             }
-            DdNode * nextOr = Cudd_bddOr( dd, orNode, andNode );
-            Cudd_Ref( nextOr );
-            Cudd_RecursiveDeref( dd, orNode );
-            Cudd_RecursiveDeref( dd, andNode );
-            orNode = nextOr;
         }
     }
 
