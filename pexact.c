@@ -2548,6 +2548,63 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
 }
 
 /**
+ * @brief Resolves one BDD child edge into a SAT literal.
+ *
+ * @details Handles CUDD complemented edges by regularizing the node pointer and
+ *          tracking the complement bit separately. For constants, maps to the
+ *          dedicated SAT constant variables. For non-constants, finds the child
+ *          in the collected BDD node array and applies phase via Abc_Var2Lit.
+ *
+ * @param col BDD node collection.
+ * @param nodeVar SAT variable mapping for collected nodes.
+ * @param childRaw Raw CUDD child pointer (possibly complemented).
+ * @param litConst0Raw SAT variable for constant 0.
+ * @param litConst1Raw SAT variable for constant 1.
+ * @param litOut Output SAT literal for the child.
+ *
+ * @return Returns status.
+ * @retval true if literal resolution succeeded.
+ * @retval false if child lookup failed.
+ */
+static bool ExaManResolveChildLit(
+    const BddCollect_t * col,
+    const int * nodeVar,
+    DdNode * childRaw,
+    const int litConst0Raw,
+    const int litConst1Raw,
+    int * litOut )
+{
+    DdNode * childReg = Cudd_Regular( childRaw );
+    int isCompl = Cudd_IsComplement( childRaw ) ? 1 : 0;
+
+    if ( Cudd_IsConstant( childReg ) )
+    {
+        int constVal = isCompl ? 0 : 1;
+        int constVar = constVal ? litConst1Raw : litConst0Raw;
+        *litOut = Abc_Var2Lit( constVar, 0 );
+        return 1;
+    }
+
+    int childVar = -1;
+    for ( int j = 0; j < col->size; j++ )
+    {
+        if ( col->nodes[j] == childReg )
+        {
+            childVar = nodeVar[j];
+            break;
+        }
+    }
+
+    if ( childVar < 0 )
+    {
+        return 0;
+    }
+
+    *litOut = Abc_Var2Lit( childVar, isCompl );
+    return 1;
+}
+
+/**
  * @brief Adds one BDD-derived cardinality clause for a single collected node.
  *
  * @details Encodes the selected BDD node as a MUX-style SAT clause using the
@@ -2575,71 +2632,26 @@ bool ExaManAddCardClausesCuddInner(
     DdNode * node = col->nodes[i];
     int nodeIdx = node->index;
 
-    int muxSelVar = 0;
+    int pi = 0;
     if ( p->pMap != NULL && nodeIdx >= 0 && nodeIdx < p->sizeMap )
     {
-        muxSelVar = p->pMap[nodeIdx].var;
+        pi = p->pMap[nodeIdx].var;
     }
 
-    DdNode * tRaw = Cudd_T( node );
-    DdNode * eRaw = Cudd_E( node );
+    int litChild1 = 0;
+    int litChild0 = 0;
 
-    DdNode * tReg = Cudd_Regular( tRaw );
-    DdNode * eReg = Cudd_Regular( eRaw );
-
-    int tCompl = Cudd_IsComplement( tRaw ) ? 1 : 0;
-    int eCompl = Cudd_IsComplement( eRaw ) ? 1 : 0;
-
-    int tVar = -1;
-    int eVar = -1;
-
-    for ( int j = 0; j < col->size; j++ )
+    if ( !ExaManResolveChildLit( col, nodeVar, Cudd_T( node ), litConst0Raw, litConst1Raw, &litChild1 ) )
     {
-        if ( col->nodes[j] == tReg )
-        {
-            tVar = nodeVar[j];
-        }
-        if ( col->nodes[j] == eReg )
-        {
-            eVar = nodeVar[j];
-        }
-        if ( tVar >= 0 && eVar >= 0 )
-        {
-            break;
-        }
+        return 0;
     }
 
-    int litT;
-    if ( Cudd_IsConstant( tReg ) )
+    if ( !ExaManResolveChildLit( col, nodeVar, Cudd_E( node ), litConst0Raw, litConst1Raw, &litChild0 ) )
     {
-        int tValue = tCompl ? 0 : 1;
-        int tConstVar = tValue ? litConst1Raw : litConst0Raw;
-        litT = Abc_Var2Lit( tConstVar, 0 );
-    } else
-    {
-        if ( tVar < 0 )
-        {
-            return 0;
-        }
-        litT = Abc_Var2Lit( tVar, tCompl );
+        return 0;
     }
 
-    int litE;
-    if ( Cudd_IsConstant( eReg ) )
-    {
-        int eValue = eCompl ? 0 : 1;
-        int eConstVar = eValue ? litConst1Raw : litConst0Raw;
-        litE = Abc_Var2Lit( eConstVar, 0 );
-    } else
-    {
-        if ( eVar < 0 )
-        {
-            return 0;
-        }
-        litE = Abc_Var2Lit( eVar, eCompl );
-    }
-
-    if ( !AddMuxEncodingCuddLit( p, nodeVar[i], muxSelVar, litT, litE ) )
+    if ( !AddMuxEncodingCuddLit( p, nodeVar[i], pi, litChild1, litChild0 ) )
     {
         return 0;
     }
