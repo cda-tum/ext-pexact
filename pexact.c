@@ -2102,6 +2102,10 @@ bool ExactPowerSynthesisCNF( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, 
  */
 DdNode * BddNOutofROptCudd( DdManager * dd, int n, int r, int np, int nP )
 {
+    if ( r <= 0 )
+    {
+        return ( n == 0 ) ? Cudd_ReadOne( dd ) : Cudd_ReadLogicZero( dd );
+    }
     int * comb = ( int * )malloc( sizeof( int ) * r );
     if ( comb == NULL )
     {
@@ -2188,10 +2192,14 @@ DdNode * BddNOutofROptCudd( DdManager * dd, int n, int r, int np, int nP )
  */
 DdNode * BddNOutofRCudd( DdManager * dd, int n, int r, int np, int nP )
 {
+    if ( r <= 0 )
+    {
+        return ( n == 0 ) ? Cudd_ReadOne( dd ) : Cudd_ReadLogicZero( dd );
+    }
+
     int * comb = ( int * )malloc( sizeof( int ) * r );
     if ( comb == NULL )
     {
-        free( comb );
         return Cudd_ReadLogicZero( dd );
     }
     long long nCombs = ( long long )pow( 2, r );
