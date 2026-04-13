@@ -1202,15 +1202,17 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
 
     memset( pVars, 0, sizeof( int ) * pLen );
 
-    for ( int pi = 0; pi < np; ++pi )
+    for ( int pi = 0; pi < pLen; ++pi )
     {
-        pVars[pi] = pStart + pi;
+        if ( pi < np )
+        {
+            pVars[pi] = pStart + pi;
+        } else
+        {
+            pVars[pi] = pStart + ( 2 * np ) - 2 - pi;
+        }
     }
 
-    for ( int pi = 0; pi < np - 2; ++pi )
-    {
-        pVars[np + pi] = pStart + np - 2 - pi;
-    }
     int xEnd = ( int )pow( 2, p->nVars ) - 1;
     if ( xEnd < 0 )
     {
@@ -2336,6 +2338,20 @@ void AddMuxEncodingCudd( PexaMan_t * p, int o, int c, int i1, int i0 )
 //     CollectRec( dd, Cudd_E( f ), c );
 // }
 
+/**
+ * @brief Visits one BDD child and appends it to the collection if needed.
+ *
+ * @details Normalizes the child pointer, skips constants and already seen nodes,
+ *          and adds the node to the collection if capacity allows.
+ *
+ * @param child BDD child node.
+ * @param c BDD node collection.
+ *
+ * @return Returns node position in the collection.
+ * @retval >= 0 if the child was added successfully.
+ * @retval -1 if the child is constant or already present.
+ * @retval -2 if the collection capacity is exceeded.
+ */
 
 static int VisitChild( DdNode * child, BddCollect_t * c )
 {
@@ -2369,7 +2385,15 @@ static int VisitChild( DdNode * child, BddCollect_t * c )
     return newPos;
 }
 
-
+/**
+ * @brief Iteratively collects all reachable BDD nodes.
+ *
+ * @details Traverses the BDD starting at the root and stores each visited node
+ *          exactly once in the collection.
+ *
+ * @param f BDD root node.
+ * @param c BDD node collection.
+ */
 static void CollectIter( DdNode * f, BddCollect_t * c )
 {
     f = Cudd_Regular( f );
@@ -2409,6 +2433,20 @@ static void CollectIter( DdNode * f, BddCollect_t * c )
         }
     }
 }
+
+/**
+ * @brief Adds one BDD-derived cardinality clause for a single collected node.
+ *
+ * @details Encodes the selected BDD node as a MUX-style SAT clause using the
+ *          mapped node variable and the constant literals.
+ *
+ * @param p Pexact struct.
+ * @param col BDD node collection.
+ * @param nodeVar SAT variable mapping for collected nodes.
+ * @param i Node index in the collection.
+ * @param litConst0Raw Raw SAT variable for constant 0.
+ * @param litConst1Raw Raw SAT variable for constant 1.
+ */
 void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int * nodeVar, int i, int litConst0Raw, int litConst1Raw )
 {
     DdNode * node = col->nodes[i];
@@ -2455,6 +2493,15 @@ void ExaManAddCardClausesCuddInner( PexaMan_t * p, BddCollect_t * col, const int
     AddMuxEncodingCudd( p, var, pi, child0, child1 );
 }
 
+/**
+ * @brief Adds CNF clauses derived from a BDD representation.
+ *
+ * @details Collects all BDD nodes, allocates SAT variables for them, adds
+ *          constant constraints, and encodes the BDD structure into CNF.
+ *
+ * @param p Pexact struct.
+ * @param r BDD root node.
+ */
 void ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 {
     if ( r == NULL )
@@ -2639,6 +2686,21 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
     return 1;
 }
 
+
+/**
+ * @brief Builds the SAT instance for BDD-based exact power synthesis.
+ *
+ * @details Adds the base CNF constraints, p-variable BDD encoding, computes the
+ *          activity-restricted BDD, and encodes the BDD into CNF.
+ *
+ * @param pPars Input information from executed abc command.
+ * @param p Pexact struct.
+ * @param node Combination node describing the current activity/gate candidate.
+ *
+ * @return Returns status.
+ * @retval true if encoding succeeded.
+ * @retval false if encoding failed.
+ */
 bool ExactPowerSynthesisCnfBdd( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node )
 {
     DdManager * dd = Cudd_Init(
@@ -2678,6 +2740,21 @@ bool ExactPowerSynthesisCnfBdd( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * nod
     return 1;
 }
 
+/**
+ * @brief Builds the SAT instance for BDD-based exact power synthesis with activity range.
+ *
+ * @details Same as ExactPowerSynthesisCnfBdd but uses an activity interval
+ *          defined by delta to relax the BDD selection.
+ *
+ * @param pPars Input information from executed abc command.
+ * @param p Pexact struct.
+ * @param node Combination node describing the current activity/gate candidate.
+ * @param delta Activity range offset.
+ *
+ * @return Returns status.
+ * @retval true if encoding succeeded.
+ * @retval false if encoding failed.
+ */
 bool ExactPowerSynthesisCnfBddRange( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * node, int delta )
 {
     DdManager * dd = Cudd_Init(
@@ -2718,7 +2795,18 @@ bool ExactPowerSynthesisCnfBddRange( Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t 
     return 1;
 }
 
-
+/**
+ * @brief Running exact synthesis with BDD-based biary search over activity.
+ *
+ * @details Uses a stepwise activity search and BDD-based CNF encoding to find an
+ *          optimal solution with fewer solver iterations.
+ *
+ * @param pPars Input information from executed abc command.
+ * @param stepSize Initial activity step size.
+ *
+ * @return Returns 0 if synthesis was successful.
+ * @retval 1 if synthesis failed or no solution was found.
+ */
 int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
 {
     int status = 0;
@@ -2798,6 +2886,24 @@ int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
     return 1;
 }
 
+/**
+ * @brief Inner loop for BDD-based biary activity search.
+ *
+ * @details Tries all gate counts for the given activity target, rebuilds the
+ *          SAT instance for each attempt, and updates the activity delta after
+ *          successful solving.
+ *
+ * @param pPars Input information from executed abc command.
+ * @param p Pointer to Pexact struct pointer.
+ * @param pTruth Original truth table.
+ * @param r Current gate count.
+ * @param act Pointer to current activity value.
+ * @param delta Pointer to current activity step size.
+ *
+ * @return Returns status.
+ * @retval 0 if a solution was found.
+ * @retval 1 if no solution was found.
+ */
 int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaMan_t ** p, word * pTruth, const int r, const int * act, int * delta )
 {
     for ( int rIt = 1; rIt < r + 1; rIt++ )
@@ -2834,6 +2940,18 @@ int PexaManExactPowerSynthesisBasePowerBDDBiaryInner( Bmc_EsPar_t * pPars, PexaM
     return 1;
 }
 
+/**
+ * @brief Running exact synthesis with BDD-based biary search over activity.
+ *
+ * @details Repeats BDD-based solving while adapting the activity window until
+ *          a feasible solution is found or the gate limit is reached.
+ *
+ * @param pPars Input information from executed abc command.
+ * @param stepSize Initial activity step size.
+ *
+ * @return Returns 0 if synthesis was successful.
+ * @retval 1 if synthesis failed or no solution was found.
+ */
 int PexaManExactPowerSynthesisBasePowerBDDBiary( Bmc_EsPar_t * pPars, int stepSize )
 {
     abctime clkTotal = Abc_Clock();
