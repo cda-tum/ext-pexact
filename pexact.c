@@ -2411,37 +2411,34 @@ DdNode * CalculateBddCuddSmallerThanMin(
  * @retval true if encoding succeeded.
  * @retval false if encoding failed.
  */
-bool AddMuxEncodingCudd( PexaMan_t * p, const int o, const int c, const int i1, const int i0 )
+static bool AddMuxEncodingCuddLit( PexaMan_t * p, int o, int c, int litI1, int litI0 )
 {
     int pList[CONST_THREE];
-    pList[CONST_ZERO] = Abc_Var2Lit( c, 1 );
-    pList[CONST_ONE] = Abc_Var2Lit( o, 1 );
-    pList[CONST_TWO] = Abc_Var2Lit( i1, 0 );
+
+    pList[0] = Abc_Var2Lit( c, 1 );
+    pList[1] = Abc_Var2Lit( o, 1 );
+    pList[2] = litI1;
     if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
-    {
         return 0;
-    }
-    pList[CONST_ZERO] = Abc_Var2Lit( c, 1 );
-    pList[CONST_ONE] = Abc_Var2Lit( i1, 1 );
-    pList[CONST_TWO] = Abc_Var2Lit( o, 0 );
+
+    pList[0] = Abc_Var2Lit( c, 1 );
+    pList[1] = Abc_LitNot( litI1 );
+    pList[2] = Abc_Var2Lit( o, 0 );
     if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
-    {
         return 0;
-    }
-    pList[CONST_ZERO] = Abc_Var2Lit( c, 0 );
-    pList[CONST_ONE] = Abc_Var2Lit( o, 1 );
-    pList[CONST_TWO] = Abc_Var2Lit( i0, 0 );
+
+    pList[0] = Abc_Var2Lit( c, 0 );
+    pList[1] = Abc_Var2Lit( o, 1 );
+    pList[2] = litI0;
     if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
-    {
         return 0;
-    }
-    pList[CONST_ZERO] = Abc_Var2Lit( c, 0 );
-    pList[CONST_ONE] = Abc_Var2Lit( i0, 1 );
-    pList[CONST_TWO] = Abc_Var2Lit( o, 0 );
+
+    pList[0] = Abc_Var2Lit( c, 0 );
+    pList[1] = Abc_LitNot( litI0 );
+    pList[2] = Abc_Var2Lit( o, 0 );
     if ( !sat_solver_addclause( p->pSat, pList, pList + CONST_THREE ) )
-    {
         return 0;
-    }
+
     return 1;
 }
 
@@ -2570,41 +2567,51 @@ bool ExaManAddCardClausesCuddInner( PexaMan_t * p, const BddCollect_t * col, con
         pi = p->pMap[nodeIdx].var;
     }
 
-    DdNode * nodeT = Cudd_T( node );
-    DdNode * nodeE = Cudd_E( node );
-    int child0 = -CONST_THREE;
-    int child1 = -CONST_THREE;
+    DdNode * nodeTraw = Cudd_T( node );
+    DdNode * nodeEraw = Cudd_E( node );
+    DdNode * nodeT = Cudd_Regular( nodeTraw );
+    DdNode * nodeE = Cudd_Regular( nodeEraw );
+    int compT = Cudd_IsComplement( nodeTraw ) ? 1 : 0;
+    int compE = Cudd_IsComplement( nodeEraw ) ? 1 : 0;
+
+    int child1Var = -1, child0Var = -1;
+
     for ( int j = 0; j < col->size; j++ )
     {
         if ( col->nodes[j] == nodeT )
-        {
-            child1 = nodeVar[j];
-        }
+            child1Var = nodeVar[j];
         if ( col->nodes[j] == nodeE )
-        {
-            child0 = nodeVar[j];
-        }
-    }
-    if ( Cudd_ReadLogicZero( p->dd ) == nodeT )
-    {
-        child1 = litConst0Raw;
-    } else if ( Cudd_ReadOne( p->dd ) == nodeT )
-    {
-        child1 = litConst1Raw;
-    }
-    if ( Cudd_ReadLogicZero( p->dd ) == nodeE )
-    {
-        child0 = litConst0Raw;
-    } else if ( Cudd_ReadOne( p->dd ) == nodeE )
-    {
-        child0 = litConst1Raw;
+            child0Var = nodeVar[j];
     }
 
-    int var = nodeVar[i];
+    int litChild1, litChild0;
 
-    if ( !AddMuxEncodingCudd( p, var, pi, child1, child0 ) )
+    // T child
+    if ( Cudd_IsConstant( nodeT ) )
     {
-        printf( "Error adding MUX encoding for node %d\n", i );
+        int tVal = compT ? 0 : 1;  // regular one + complemented => zero
+        litChild1 = Abc_Var2Lit( tVal ? litConst1Raw : litConst0Raw, 0 );
+    } else
+    {
+        if ( child1Var < 0 )
+            return 0;
+        litChild1 = Abc_Var2Lit( child1Var, compT );
+    }
+
+    // E child
+    if ( Cudd_IsConstant( nodeE ) )
+    {
+        int eVal = compE ? 0 : 1;
+        litChild0 = Abc_Var2Lit( eVal ? litConst1Raw : litConst0Raw, 0 );
+    } else
+    {
+        if ( child0Var < 0 )
+            return 0;
+        litChild0 = Abc_Var2Lit( child0Var, compE );
+    }
+
+    if ( !AddMuxEncodingCuddLit( p, nodeVar[i], pi, litChild1, litChild0 ) )
+    {
         return 0;
     }
     return 1;
