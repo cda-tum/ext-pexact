@@ -1198,7 +1198,7 @@ bool AddPClausesBddInner( PexaMan_t * p, const int i, const int mSize, const int
     }
     lit = Abc_Var2Lit( mStart, 0 );
     if ( !sat_solver_addclause( p->pSat, &lit, &lit + 1 ) )
-    {  //restricting m1 needs to be fulfilled
+    {  // restricting m1 needs to be fulfilled
         return 0;
     }
     int pLen = ( 2 * np ) - 2;
@@ -2167,8 +2167,6 @@ DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int 
     free( comb );
     return o;
 }
-
-
 /**
  * @brief Builds a BDD for the constraint "exactly n out of r are active".
  *
@@ -2218,7 +2216,7 @@ DdNode * BddNOutofRCudd( DdManager * dd, const int n, const int r, const int np,
             sum += comb[nR];
         }
 
-        // IF sum of current combination equals n
+        // If sum of current combination equals n
         if ( sum == n )
         {
             int firstIdx = np;
@@ -2390,12 +2388,10 @@ DdNode * CalculateBddCuddSmallerThanMin(
     free( wP );
     return orNode;
 }
-
-
 /**
  * @brief Adds MUX encoding clauses without explicit error propagation.
  *
- * @details Inserts the four standard CNF clauses for o = (c ? i1 : i0) into the SAT solver.
+ * @details Inserts the four standard CNF clauses representing o = (c ? i1 : i0) into the SAT solver.
  *          This helper variant does not return a status and assumes clause insertion succeeds.
  *
  * @param p Pexact struct.
@@ -2403,7 +2399,6 @@ DdNode * CalculateBddCuddSmallerThanMin(
  * @param c Control variable.
  * @param i1 High child variable.
  * @param i0 Low child variable.
- *
  *
  * @return Returns status.
  * @retval true if encoding succeeded.
@@ -2904,7 +2899,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
  * @details Adds the base CNF constraints, p-variable BDD encoding, computes the
  *          activity-restricted BDD, and encodes the BDD into CNF.
  *
- * @param pPars Input information from executed abc command.
+ * @param pPars Input information from executed ABC command.
  * @param p Pexact struct.
  * @param node Combination node describing the current activity/gate candidate.
  *

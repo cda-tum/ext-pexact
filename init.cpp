@@ -121,7 +121,7 @@ usage:
     Abc_Print( -2, "usage: pexact [-I <num>] [-M <num>] <hex>\n" );
     Abc_Print( -2, "\t           exact synthesis of multi-input function using two-input gates\n" );
     Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", pPars->nVars );
-    Abc_Print( -2, "\t-M <num> : search space exploration mode 0: queue search 1: free search 2: binary search [default = 0]\n" );
+    Abc_Print( -2, "\t-M <num> : search space exploration mode 0: queue search; 1: free search; 2: binary search [default = 0]\n" );
     return 1;
 }
 /**
