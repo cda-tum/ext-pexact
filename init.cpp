@@ -61,6 +61,7 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
     Extra_UtilGetoptReset();
     Abc_FrameInit( pAbc );
     int searchMode = 0;  // Default search mode
+    long parsedSearchMode = 0;
     while ( ( c = Extra_UtilGetopt( argc, argv, "IM" ) ) != EOF )
     {
         switch ( c )
@@ -82,12 +83,13 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
                 goto usage;
             }
             errno = 0;
-            searchMode = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
-            if ( pEnd == argv[globalUtilOptind] || *pEnd != '\0' || errno == ERANGE || searchMode < 0 || searchMode > 2 )
+            parsedSearchMode = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
+            if ( pEnd == argv[globalUtilOptind] || *pEnd != '\0' || errno == ERANGE || parsedSearchMode < 0 || parsedSearchMode > 2 )
             {
                 Abc_Print( -1, "Invalid search mode. Valid values are 0 (queue search), 1 (free search), and 2 (binary search).\n" );
                 goto usage;
             }
+            searchMode = ( int )parsedSearchMode;
             globalUtilOptind++;
             break;
         }
