@@ -65,7 +65,7 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
     {
         switch ( c )
         {
-        case 'I':
+        case 'I': {
             if ( globalUtilOptind >= argc )
             {
                 Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
@@ -74,7 +74,8 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
             pPars->nVars = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
             globalUtilOptind++;
             break;
-        case 'M':
+        }
+        case 'M': {
             if ( globalUtilOptind >= argc )
             {
                 Abc_Print( -1, "Command line switch \"-M\" should be followed by an integer.\n" );
@@ -89,8 +90,10 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
             }
             globalUtilOptind++;
             break;
-        default:
+        }
+        default: {
             goto usage;
+        }
         }
     }
     if ( argc == globalUtilOptind + 1 )

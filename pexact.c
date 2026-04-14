@@ -2086,37 +2086,37 @@ bool ExactPowerSynthesisCNF( const Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * 
 }
 
 /**
- * @brief Builds a BDD for the constraint "exactly n out of r are active" (optimized variant).
+ * @brief Builds a BDD for the constraint "exactly k out of n are active" (optimized variant).
  *
- * @details Enumerates all binary assignments of length r, selects those with Hamming weight n,
+ * @details Enumerates all binary assignments of length n, selects those with Hamming weight k,
  *          builds one conjunction per valid assignment, and combines them with OR.
  *          Variables are mapped with offset np and stride nP.
  *
  * @param manager CUDD manager.
- * @param n Required number of active variables.
- * @param r Number of variables in the group.
+ * @param k Required number of active variables.
+ * @param n Number of variables in the group.
  * @param np Offset of the p-variable class.
  * @param nP Total number of p-variable classes per gate.
  *
- * @return Pointer to resulting BDD node (referenced).
+ * @return Pointer to resulting BDD node.
  */
-DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int np, const int nP )
+DdNode * BddKOutofNOptCudd( DdManager * dd, const int k, const int n, const int np, const int nP )
 {
-    if ( r <= 0 )
+    if ( n <= 0 )
     {
-        return ( n == 0 ) ? Cudd_ReadOne( dd ) : Cudd_ReadLogicZero( dd );
+        return ( k == 0 ) ? Cudd_ReadOne( dd ) : Cudd_ReadLogicZero( dd );
     }
 
-    int * comb = ( int * )malloc( sizeof( int ) * r );
+    int * comb = ( int * )malloc( sizeof( int ) * n );
     if ( comb == NULL )
     {
         return Cudd_ReadLogicZero( dd );
     }
 
-    long long nCombs = ( long long )pow( 2, r );
+    long long nCombs = ( long long )pow( 2, n );
     if ( nCombs > PEXACT_LLONG_MAX )
     {
-        printf( "Error: Number of combinations exceeds limits for r=%d.\n", r );
+        printf( "Error: Number of combinations exceeds limits for n=%d.\n", n );
         free( comb );
         return Cudd_ReadLogicZero( dd );
     }
@@ -2126,20 +2126,20 @@ DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int 
 
     for ( long long i = 0; i < nCombs; i++ )
     {
-        ConvertBaseIntLong( 2, i, r, comb );
+        ConvertBaseIntLong( 2, i, n, comb );
 
         int sum = 0;
-        for ( int nR = 0; nR < r; nR++ )
+        for ( int nR = 0; nR < n; nR++ )
         {
             sum += comb[nR];
         }
 
-        if ( sum == n )
+        if ( sum == k )
         {
             DdNode * andNode = Cudd_ReadOne( dd );
             Cudd_Ref( andNode );
 
-            for ( int nR = 0; nR < r; nR++ )
+            for ( int nR = 0; nR < n; nR++ )
             {
                 if ( comb[nR] != 0 )
                 {
@@ -2168,36 +2168,36 @@ DdNode * BddNOutofROptCudd( DdManager * dd, const int n, const int r, const int 
     return o;
 }
 /**
- * @brief Builds a BDD for the constraint "exactly n out of r are active".
+ * @brief Builds a BDD for the constraint "exactly k out of n are active".
  *
  * @details Enumerates all binary assignments of length r, constructs one product term
  *          (including positive/negative phases) for each assignment with Hamming weight n,
  *          and accumulates all terms with OR.
  *
  * @param dd CUDD manager.
- * @param n Required number of active variables.
- * @param r Number of variables in the group.
+ * @param k Required number of active variables.
+ * @param n Number of variables in the group.
  * @param np Offset of the p-variable class.
  * @param nP Total number of p-variable classes per gate.
  *
- * @return Pointer to resulting BDD node (referenced).
+ * @return Pointer to resulting BDD node.
  */
-DdNode * BddNOutofRCudd( DdManager * dd, const int n, const int r, const int np, const int nP )
+DdNode * BddKOutofNCudd( DdManager * dd, const int k, const int n, const int np, const int nP )
 {
-    if ( r <= 0 )
+    if ( n <= 0 )
     {
-        return ( n == 0 ) ? Cudd_ReadOne( dd ) : Cudd_ReadLogicZero( dd );
+        return ( k == 0 ) ? Cudd_ReadOne( dd ) : Cudd_ReadLogicZero( dd );
     }
 
-    int * comb = ( int * )malloc( sizeof( int ) * r );
+    int * comb = ( int * )malloc( sizeof( int ) * n );
     if ( comb == NULL )
     {
         return Cudd_ReadLogicZero( dd );
     }
-    long long nCombs = ( long long )pow( 2, r );
+    long long nCombs = ( long long )pow( 2, n );
     if ( nCombs > PEXACT_LLONG_MAX )
     {
-        printf( "Error: Number of combinations exceeds limits for r=%d.\n", r );
+        printf( "Error: Number of combinations exceeds limits for r=%d.\n", n );
         free( comb );
         return Cudd_ReadLogicZero( dd );
     }
@@ -2208,16 +2208,16 @@ DdNode * BddNOutofRCudd( DdManager * dd, const int n, const int r, const int np,
     for ( long long i = 0; i < nCombs; i++ )
     {
         // Generate combination for current iteration
-        ConvertBaseIntLong( 2, i, r, comb );
+        ConvertBaseIntLong( 2, i, n, comb );
 
         int sum = 0;
-        for ( int nR = 0; nR < r; nR++ )
+        for ( int nR = 0; nR < n; nR++ )
         {
             sum += comb[nR];
         }
 
-        // If sum of current combination equals n
-        if ( sum == n )
+        // If sum of current combination equals k
+        if ( sum == k )
         {
             int firstIdx = np;
             DdNode * var = Cudd_bddIthVar( dd, firstIdx );
@@ -2225,7 +2225,7 @@ DdNode * BddNOutofRCudd( DdManager * dd, const int n, const int r, const int np,
             Cudd_Ref( andNode );
 
             // Initialize the AND path with the first variable
-            for ( int nR = 1; nR < r; nR++ )
+            for ( int nR = 1; nR < n; nR++ )
             {
                 int currentIdx = ( nR * nP ) + np;
                 DdNode * nextVar = Cudd_bddIthVar( dd, currentIdx );
@@ -2281,7 +2281,7 @@ static bool CalculateBddCuddSmallerThanMinInner(
     {
         if ( combi[j] != 0 )
         {
-            DdNode * tmp = BddNOutofROptCudd( dd, combi[j], r, j, nP );
+            DdNode * tmp = BddKOutofNOptCudd( dd, combi[j], r, j, nP );
             if ( tmp == Cudd_ReadLogicZero( dd ) )
             {
                 printf( "CalculateBddCuddSmallerThanMinInner failed\n" );
@@ -2318,7 +2318,7 @@ static bool CalculateBddCuddSmallerThanMinInner(
  * @param act Upper activity bound.
  * @param actMin Lower activity bound.
  *
- * @return Pointer to resulting BDD node (referenced).
+ * @return Pointer to resulting BDD node.
  */
 DdNode * CalculateBddCuddSmallerThanMin(
     DdManager * dd,
@@ -2774,12 +2774,12 @@ bool ExaManAddCardClausesCudd( PexaMan_t * p, DdNode * r )
 /**
  * @brief Running exact synthesis.
  *
- * @details Running exact synthesis. Calculating a logic network with the least amount of gates.
+ * @details Running exact synthesis. Calculating a logic network with optimal switching activity.
  *          Iterating over gate count r. For each r, check if a solution exists. First solution
- *          corresponds to a minimum-sized logic network. Adds p variable constraints and cardinality constraints to
+ *          corresponds to a optimal logic network with regard to switching activity. Adds p variable constraints and cardinality constraints to
  *          identify switching activity optimal solution. Uses BDD type p-variable encoding and polynomial cardinality constraints.
  *
- * @param pPars Input information from executed abc command.
+ * @param pPars Input information struct from executed pexact command for synthesis parameters.
  *
  * @return Returns 0 if synthesis was successful.
  */
@@ -2899,7 +2899,7 @@ int PexaManExactPowerSynthesisBasePower( Bmc_EsPar_t * pPars )
  * @details Adds the base CNF constraints, p-variable BDD encoding, computes the
  *          activity-restricted BDD, and encodes the BDD into CNF.
  *
- * @param pPars Input information from executed ABC command.
+ * @param pPars Input information struct from executed pexact command for synthesis parameters.
  * @param p Pexact struct.
  * @param node Combination node describing the current activity/gate candidate.
  *
@@ -2962,7 +2962,7 @@ bool ExactPowerSynthesisCnfBdd( const Bmc_EsPar_t * pPars, PexaMan_t * p, const 
  * @details Same as ExactPowerSynthesisCnfBdd but uses an activity interval
  *          defined by delta to relax the BDD selection.
  *
- * @param pPars Input information from executed abc command.
+ * @param pPars Input information struct from executed pexact command for synthesis parameters.
  * @param p Pexact struct.
  * @param node Combination node describing the current activity/gate candidate.
  * @param delta Activity range offset.
@@ -3022,10 +3022,10 @@ bool ExactPowerSynthesisCnfBddRange( const Bmc_EsPar_t * pPars, PexaMan_t * p, c
 /**
  * @brief Running exact synthesis with BDD-based binary search over activity.
  *
- * @details Uses a stepwise activity search and BDD-based CNF encoding to find an
- *          optimal solution with fewer solver iterations.
+ * @details Uses free search approach: search space exploration and employs pseudo boolean cardinallity constraints based on BDDs to iteratively narrow down the activity target.
+ *          For each activity target, iterates over gate counts and rebuilds the SAT instance for each attempt.
  *
- * @param pPars Input information from executed abc command.
+ * @param pPars Input information struct from executed pexact command for synthesis parameters.
  * @param stepSize Initial activity step size.
  *
  * @return Returns 0 if synthesis was successful.
@@ -3114,7 +3114,7 @@ int PexaManExactPowerSynthesisBasePowerBDD( Bmc_EsPar_t * pPars )
  *          SAT instance for each attempt, and updates the activity delta after
  *          successful solving.
  *
- * @param pPars Input information from executed abc command.
+ * @param pPars Input information struct from executed pexact command for synthesis parameters.
  * @param p Pointer to Pexact struct pointer.
  * @param pTruth Original truth table.
  * @param r Current gate count.
@@ -3165,9 +3165,9 @@ int PexaManExactPowerSynthesisBasePowerBDDBinaryInner( Bmc_EsPar_t * pPars, Pexa
  * @brief Running exact synthesis with BDD-based binary search over activity.
  *
  * @details Repeats BDD-based solving while adapting the activity window until
- *          a feasible solution is found or the gate limit is reached.
+ *          a feasible solution is found or the gate limit is reached. Employs binary search by halving the activity step size after each successful solve to efficiently converge to the optimal activity level.
  *
- * @param pPars Input information from executed abc command.
+ * @param pPars Input information struct from executed pexact command for synthesis parameters.
  * @param stepSize Initial activity step size.
  *
  * @return Returns 0 if synthesis was successful.
