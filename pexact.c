@@ -2086,7 +2086,7 @@ bool ExactPowerSynthesisCNF( const Bmc_EsPar_t * pPars, PexaMan_t * p, Comb_t * 
 }
 
 /**
- * @brief Builds a BDD for the constraint "exactly k out of n are active" (optimized variant).
+ * @brief Builds a k-out-of-n constraint for the BDD (optimized variant).
  *
  * @details Enumerates all binary assignments of length n, selects those with Hamming weight k,
  *          builds one conjunction per valid assignment, and combines them with OR.
