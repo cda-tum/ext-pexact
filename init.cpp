@@ -11,17 +11,36 @@
 #include "base/main/mainInt.h"
 #include "sat/bmc/bmc.h"
 
+
 extern "C"
 {
 #include "pexact.h"
 }
 
+#include "errno.h"
 #include "stdio.h"
 
 namespace
 {
 const int DECIMAL_BASE = 10;
+const int STEPSIZE_75 = 75;
 
+
+int RunPexact( int searchMode, Bmc_EsPar_t * pPars )
+{
+    int status = 0;
+    if ( searchMode == 0 )
+    {
+        status = PexaManExactPowerSynthesisBasePower( pPars );
+    } else if ( searchMode == 1 )
+    {
+        status = PexaManExactPowerSynthesisBasePowerBDD( pPars );
+    } else if ( searchMode == 2 )
+    {
+        status = PexaManExactPowerSynthesisBasePowerBDDBinary( pPars, STEPSIZE_75 );
+    }
+    return status;
+}
 /**
  * @brief Pexact command.
  *
@@ -41,11 +60,13 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
     Bmc_EsParSetDefault( pPars );
     Extra_UtilGetoptReset();
     Abc_FrameInit( pAbc );
-    while ( ( c = Extra_UtilGetopt( argc, argv, "I" ) ) != EOF )
+    int searchMode = 0;  // Default search mode
+    long parsedSearchMode = 0;
+    while ( ( c = Extra_UtilGetopt( argc, argv, "IM" ) ) != EOF )
     {
         switch ( c )
         {
-        case 'I':
+        case 'I': {
             if ( globalUtilOptind >= argc )
             {
                 Abc_Print( -1, "Command line switch \"-I\" should be followed by an integer.\n" );
@@ -54,8 +75,27 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
             pPars->nVars = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
             globalUtilOptind++;
             break;
-        default:
+        }
+        case 'M': {
+            if ( globalUtilOptind >= argc )
+            {
+                Abc_Print( -1, "Command line switch \"-M\" should be followed by an integer.\n" );
+                goto usage;
+            }
+            errno = 0;
+            parsedSearchMode = strtol( argv[globalUtilOptind], &pEnd, DECIMAL_BASE );
+            if ( pEnd == argv[globalUtilOptind] || *pEnd != '\0' || errno == ERANGE || parsedSearchMode < 0 || parsedSearchMode > 2 )
+            {
+                Abc_Print( -1, "Invalid search mode. Valid values are 0 (queue search), 1 (free search), and 2 (binary search).\n" );
+                goto usage;
+            }
+            searchMode = ( int )parsedSearchMode;
+            globalUtilOptind++;
+            break;
+        }
+        default: {
             goto usage;
+        }
         }
     }
     if ( argc == globalUtilOptind + 1 )
@@ -81,11 +121,12 @@ int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
         Abc_Print( -1, "Function should not have more than 4 inputs.\n" );
         return 1;
     }
-    return PexaManExactPowerSynthesisBasePower( pPars );
+    return RunPexact( searchMode, pPars );
 usage:
-    Abc_Print( -2, "usage: pexact [-I] <hex>\n" );
+    Abc_Print( -2, "usage: pexact [-I <num>] [-M <num>] <hex>\n" );
     Abc_Print( -2, "\t           exact synthesis of multi-input function using two-input gates\n" );
     Abc_Print( -2, "\t-I <num> : the number of input variables [default = %d]\n", pPars->nVars );
+    Abc_Print( -2, "\t-M <num> : search space exploration mode 0: queue search; 1: free search; 2: binary search [default = 0]\n" );
     return 1;
 }
 /**
