@@ -35,9 +35,9 @@ To use this plugin with ABC:
    ```bash
    ./abc
    abc 01> pexact -h
-   abc 01> usage: pexact [-I <num>] [-M <num>] <hex>
+   usage: pexact [-I <num>] [-M <num>] <hex>
                    exact synthesis of multi-input function using two-input gates
-        -I <num> : the number of input variables [default = 0]
+        -I <num> : the number of input variables [default = 4]
         -M <num> : search space exploration mode 0: queue search; 1: free search; 2: binary search [default = 0]
    ```
 
