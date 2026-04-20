@@ -39,6 +39,7 @@ To use this plugin with ABC:
                    exact synthesis of multi-input function using two-input gates
         -I <num> : the number of input variables [default = 4]
         -M <num> : search space exploration mode 0: queue search; 1: free search; 2: binary search [default = 0]
+   abc 01> pexact -I 4 -M 0 0123
    ```
 
 ## 🛠️ Getting Started (Developers)
