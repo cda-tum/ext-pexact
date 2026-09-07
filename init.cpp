@@ -53,13 +53,13 @@ int RunPexact( int searchMode, Bmc_EsPar_t * pPars )
  */
 int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
+    ( void )pAbc;
     int c;
     char * pEnd;
     Bmc_EsPar_t pars;
     Bmc_EsPar_t * pPars = &pars;
     Bmc_EsParSetDefault( pPars );
     Extra_UtilGetoptReset();
-    Abc_FrameInit( pAbc );
     int searchMode = 0;  // Default search mode
     long parsedSearchMode = 0;
     while ( ( c = Extra_UtilGetopt( argc, argv, "IM" ) ) != EOF )
