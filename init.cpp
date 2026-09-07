@@ -53,7 +53,7 @@ int RunPexact( int searchMode, Bmc_EsPar_t * pPars )
  */
 int PexactCommand( Abc_Frame_t * pAbc, int argc, char ** argv )
 {
-    (void)pAbc;
+    ( void )pAbc;
     int c;
     char * pEnd;
     Bmc_EsPar_t pars;
